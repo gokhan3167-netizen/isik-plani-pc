@@ -1,0 +1,35 @@
+{
+  "name": "isik-plani-masaustu",
+  "version": "2.9.0",
+  "private": true,
+  "description": "Işık Planı – sahne ışık planı ve rider çizimi (Windows / Mac)",
+  "author": "Işık Planı",
+  "main": "main.js",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "fixtures": "node scripts/fixtures.mjs",
+    "start": "npm run vendor && electron .",
+    "dist:win": "npm run vendor && npm run fixtures && electron-builder --win",
+    "dist:mac": "npm run vendor && npm run fixtures && electron-builder --mac",
+    "dist:linux": "npm run vendor && npm run fixtures && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "electron-builder": "latest",
+    "@fontsource/barlow": "^5.0.0",
+    "@fontsource/barlow-condensed": "^5.0.0",
+    "jspdf": "2.5.1",
+    "jszip": "3.10.1"
+  },
+  "build": {
+    "appId": "com.isikplani.desktop",
+    "productName": "Işık Planı",
+    "artifactName": "isik-plani-${version}-${os}-${arch}.${ext}",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "www/**/*"],
+    "win": { "target": "nsis" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Işık Planı" },
+    "mac": { "target": "dmg", "category": "public.app-category.productivity" },
+    "linux": { "target": "AppImage", "category": "Graphics" }
+  }
+}

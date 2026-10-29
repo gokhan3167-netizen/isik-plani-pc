@@ -19,6 +19,15 @@ jobs:
       - run: npm install
       - run: npm run vendor
       - run: node scripts/fixtures.mjs
+      - uses: actions/cache@v4
+        with:
+          path: gdtf-cache
+          key: gdtf-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: gdtf-${{ runner.os }}-
+      - run: node scripts/gdtf.mjs
+        env:
+          GDTF_USER: ${{ secrets.GDTF_USER }}
+          GDTF_PASS: ${{ secrets.GDTF_PASS }}
       - run: npx electron-builder ${{ matrix.hedef }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
@@ -28,3 +37,5 @@ jobs:
           path: |
             dist/*.exe
             dist/*.dmg
+            ofl-kutuphane.json
+            gdtf-kutuphane.json

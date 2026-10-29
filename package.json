@@ -1,6 +1,6 @@
 {
   "name": "isik-plani-masaustu",
-  "version": "2.9.0",
+  "version": "4.5.0",
   "private": true,
   "description": "Işık Planı – sahne ışık planı ve rider çizimi (Windows / Mac)",
   "author": "Işık Planı",
@@ -19,17 +19,43 @@
     "@fontsource/barlow": "^5.0.0",
     "@fontsource/barlow-condensed": "^5.0.0",
     "jspdf": "2.5.1",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "three": "0.128.0"
   },
   "build": {
     "appId": "com.isikplani.desktop",
-    "productName": "Işık Planı",
+    "productName": "Isik Plani",
     "artifactName": "isik-plani-${version}-${os}-${arch}.${ext}",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "www/**/*"],
-    "win": { "target": "nsis" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Işık Planı" },
-    "mac": { "target": "dmg", "category": "public.app-category.productivity" },
-    "linux": { "target": "AppImage", "category": "Graphics" }
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "www/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "executableName": "IsikPlani"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Işık Planı",
+      "uninstallDisplayName": "Işık Planı"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity",
+      "extendInfo": {
+        "CFBundleDisplayName": "Işık Planı"
+      }
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Graphics",
+      "executableName": "isik-plani"
+    }
   }
 }

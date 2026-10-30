@@ -41,6 +41,8 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  setTimeout(checkUpdates, 6000);              // açılıştan biraz sonra güncelleme kontrolü
+  setInterval(checkUpdates, 6 * 3600 * 1000);  // açık kalırsa 6 saatte bir
 });
 app.on('window-all-closed', () => { if (!isMac) app.quit(); });
 
@@ -58,19 +60,40 @@ function stopNet() {
   try { if (sockS) sockS.close(); } catch (e) {}
   sockA = sockS = null;
 }
+// ArtPollReply: konsolun Art-Net düğüm listesinde “Isik Plani” olarak görünürüz;
+// grandMA2/3 “Output Auto” modunda veriyi doğrudan bu bilgisayara gönderir.
+function artPollReply(ri) {
+  if (!sockA) return;
+  const all = ips(); const pick = (ri && all.find(ip => ip.split('.').slice(0, 2).join('.') === String(ri.address).split('.').slice(0, 2).join('.'))) || all[0] || '0.0.0.0';
+  const ip = pick.split('.').map(n => +n || 0);
+  for (let bind = 0; bind < 2; bind++) {
+    const b = Buffer.alloc(239);
+    b.write('Art-Net\0', 0, 'ascii'); b.writeUInt16LE(0x2100, 8);
+    ip.forEach((n, i) => { b[10 + i] = n; }); b.writeUInt16LE(0x1936, 14);
+    b[16] = 0; b[17] = 1; b[18] = 0; b[19] = 0;
+    b.writeUInt16LE(0x00ff, 20); b[23] = 0xd0; b.writeUInt16LE(0x7ff0, 24);
+    b.write('Isik Plani', 26, 'ascii'); b.write('Isik Plani - 3D gorsellestirme', 44, 'ascii'); b.write('#0001 [0000] OK', 108, 'ascii');
+    b[173] = 4;
+    for (let p = 0; p < 4; p++) { b[174 + p] = 0x80; b[182 + p] = 0x80; b[190 + p] = bind * 4 + p; }
+    b[200] = 0x00; ip.forEach((n, i) => { b[207 + i] = n; }); b[211] = bind + 1; b[212] = 0x08;
+    try { sockA.send(b, 6454, ri && ri.address ? ri.address : '255.255.255.255'); } catch (e) {}
+  }
+}
 function ips() { return Object.values(os.networkInterfaces()).flat().filter(i => i && i.family === 'IPv4' && !i.internal).map(i => i.address); }
 function startNet(o) {
   stopNet();
   if (o.artnet) {
     sockA = dgram.createSocket({ type: 'udp4', reuseAddr: true });
     sockA.on('message', (m, ri) => {
-      if (m.length < 18 || m.toString('ascii', 0, 7) !== 'Art-Net' || m[7] !== 0) return;
-      if (m.readUInt16LE(8) !== 0x5000) return; // ArtDmx
+      if (m.length < 10 || m.toString('ascii', 0, 7) !== 'Art-Net' || m[7] !== 0) return;
+      const op = m.readUInt16LE(8);
+      if (op === 0x2000) { artPollReply(ri); return; }   // ArtPoll: konsola “buradayım” de
+      if (m.length < 18 || op !== 0x5000) return; // ArtDmx
       const port = ((m[15] & 0x7f) << 8) | m[14], len = Math.min(512, m.readUInt16BE(16));
       sendDMX('artnet', port + (o.artBase1 ? 0 : 1), m.subarray(18, 18 + len), ri && ri.address);
     });
-    sockA.on('error', e => toWin('net-status', 'Art-Net hatası: ' + e.message));
-    sockA.bind(6454, () => { try { sockA.setBroadcast(true); } catch (e) {} });
+    sockA.on('error', e => toWin('net-status', 'Art-Net hatası: ' + (e.code === 'EADDRINUSE' ? 'bu bilgisayarda başka bir program (ör. Capture, MA 3D, Resolume) Art-Net portunu kullanıyor; onu kapatıp tekrar dene' : e.message)));
+    sockA.bind(6454, () => { try { sockA.setBroadcast(true); } catch (e) {} toWin('net-status', 'artnet-ok'); });
   }
   if (o.sacn) {
     sockS = dgram.createSocket({ type: 'udp4', reuseAddr: true });
@@ -80,7 +103,7 @@ function startNet(o) {
       const uni = m.readUInt16BE(113), cnt = Math.min(512, m.readUInt16BE(123) - 1);
       sendDMX('sacn', uni, m.subarray(126, 126 + cnt), ri && ri.address);
     });
-    sockS.on('error', e => toWin('net-status', 'sACN hatası: ' + e.message));
+    sockS.on('error', e => toWin('net-status', 'sACN hatası: ' + (e.code === 'EADDRINUSE' ? 'bu bilgisayarda başka bir program (ör. Capture, MA 3D) sACN portunu kullanıyor' : e.message)));
     sockS.bind(5568, () => {
       const from = Math.max(1, o.sFrom | 0), to = Math.min(from + 63, Math.max(from, o.sTo | 0));
       for (let u = from; u <= to; u++) {
@@ -118,3 +141,39 @@ ipcMain.handle('gdtf-download', async (e, rid) => {
   if (!r.ok || ct.includes('json')) { const j = await r.json().catch(() => ({})); throw new Error(j.error || ('HTTP ' + r.status)); }
   return new Uint8Array(await r.arrayBuffer());
 });
+
+// ---------- Güncelleme ----------
+// Windows: yeni sürüm arka planda iner, kullanıcı “Yeniden başlat” deyince kurulur (electron-updater, GitHub Releases).
+// Mac: Apple imzası olmadan kendini güncelleyemediği için yeni sürüm bildirilir, indirme sayfası açılır.
+const REPO = 'gokhan3167-netizen/isik-plani-pc';
+let updater = null, updReady = false;
+function sendUpd(o) { toWin('update', o); }
+function newer(a, b) { const p = v => String(v).replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0); const x = p(a), y = p(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) > (y[i] || 0)) return true; if ((x[i] || 0) < (y[i] || 0)) return false; } return false; }
+async function checkUpdates(manual) {
+  if (!app.isPackaged) { if (manual) sendUpd({ state: 'none', note: 'Geliştirme sürümünde güncelleme denetlenmez.' }); return; }
+  try {
+    if (process.platform === 'win32') {
+      if (!updater) {
+        updater = require('electron-updater').autoUpdater;
+        updater.autoDownload = true; updater.autoInstallOnAppQuit = true;
+        updater.on('update-available', i => sendUpd({ state: 'downloading', version: i.version }));
+        updater.on('download-progress', p => sendUpd({ state: 'downloading', percent: Math.round(p.percent || 0) }));
+        updater.on('update-downloaded', i => { updReady = true; sendUpd({ state: 'ready', version: i.version }); });
+        updater.on('update-not-available', () => { if (manual) sendUpd({ state: 'none', version: app.getVersion() }); });
+        updater.on('error', e => sendUpd({ state: 'error', note: String(e && e.message || e).slice(0, 200) }));
+      }
+      if (updReady) { sendUpd({ state: 'ready' }); return; }
+      await updater.checkForUpdates();
+    } else {
+      const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { 'User-Agent': 'IsikPlani' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json(), v = String(j.tag_name || '').replace(/^v/, '');
+      const dmg = (j.assets || []).find(a => /\.dmg$/i.test(a.name));
+      if (v && newer(v, app.getVersion())) sendUpd({ state: 'available', version: v, url: dmg ? dmg.browser_download_url : j.html_url });
+      else if (manual) sendUpd({ state: 'none', version: app.getVersion() });
+    }
+  } catch (e) { if (manual) sendUpd({ state: 'error', note: String(e && e.message || e).slice(0, 200) }); }
+}
+ipcMain.handle('update-check', () => { checkUpdates(true); return app.getVersion(); });
+ipcMain.handle('update-install', () => { if (updater && updReady) { setImmediate(() => updater.quitAndInstall(false, true)); return true; } return false; });
+ipcMain.handle('update-open', (e, url) => { if (/^https:\/\/github\.com\//.test(url)) shell.openExternal(url); return true; });

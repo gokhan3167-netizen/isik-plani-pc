@@ -5,6 +5,12 @@ contextBridge.exposeInMainWorld('isikNet', {
   stop: () => ipcRenderer.invoke('net-stop'),
   onDMX: cb => { ipcRenderer.removeAllListeners('dmx'); ipcRenderer.on('dmx', (e, d) => cb(d)); },
   onStatus: cb => { ipcRenderer.removeAllListeners('net-status'); ipcRenderer.on('net-status', (e, s) => cb(s)); },
+  update: {
+    check: () => ipcRenderer.invoke('update-check'),
+    install: () => ipcRenderer.invoke('update-install'),
+    open: url => ipcRenderer.invoke('update-open', url),
+    on: cb => { ipcRenderer.removeAllListeners('update'); ipcRenderer.on('update', (e, d) => cb(d)); }
+  },
   gdtf: {
     login: (user, password) => ipcRenderer.invoke('gdtf-login', { user, password }),
     list: () => ipcRenderer.invoke('gdtf-list'),

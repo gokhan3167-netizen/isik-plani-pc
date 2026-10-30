@@ -1,6 +1,6 @@
 {
   "name": "isik-plani-masaustu",
-  "version": "4.5.0",
+  "version": "4.8.0",
   "private": true,
   "description": "Işık Planı – sahne ışık planı ve rider çizimi (Windows / Mac)",
   "author": "Işık Planı",
@@ -43,19 +43,36 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "Işık Planı",
-      "uninstallDisplayName": "Işık Planı"
+      "uninstallDisplayName": "Işık Planı",
+      "artifactName": "Isik-Plani-Kurulum-${version}.${ext}"
     },
     "mac": {
       "target": "dmg",
       "category": "public.app-category.productivity",
       "extendInfo": {
         "CFBundleDisplayName": "Işık Planı"
-      }
+      },
+      "artifactName": "Isik-Plani-${version}-Mac.${ext}"
     },
     "linux": {
       "target": "AppImage",
       "category": "Graphics",
       "executableName": "isik-plani"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "gokhan3167-netizen",
+        "repo": "isik-plani-pc",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gokhan3167-netizen/isik-plani-pc.git"
   }
 }

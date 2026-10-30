@@ -137,7 +137,7 @@ function fxpFromGDTF(ft){
   all(ft,'Wheel').forEach(w=>{ const wi=W.length; let hasImg=false; const sl=kids(w,'Slot').map((s,k)=>{ const col=s.a.Color?fxpCie(s.a.Color):''; if(s.a.MediaFileName){ media.push([wi,k,s.a.MediaFileName]); hasImg=true; } return [s.a.Name||'',col&&col!=='ffffff'?col:'','',kids(s,'Facet').length]; });
     const n=w.a.Name||('Wheel'+wi), k=/^colou?r/i.test(n)?'c':/^gobo/i.test(n)?'g':/^prism/i.test(n)?'p':/^anim/i.test(n)?'a':sl.some(s=>s[3])?'p':hasImg?'g':'c'; WI[n]=wi; W.push({n,k,s:sl}); });
   const ph={}, bm=all(ft,'Beam')[0];
-  if(bm){ if(+bm.a.BeamAngle>0) ph.ba=+bm.a.BeamAngle; if(+bm.a.FieldAngle>0) ph.fa=+bm.a.FieldAngle; if(+bm.a.LuminousFlux>0) ph.lm=Math.round(+bm.a.LuminousFlux); if(+bm.a.ColorTemperature>0) ph.k=Math.round(+bm.a.ColorTemperature); if(bm.a.LampType) ph.lt=bm.a.LampType; }
+  if(bm){ if(+bm.a.BeamAngle>0) ph.ba=+bm.a.BeamAngle; if(+bm.a.FieldAngle>0) ph.fa=+bm.a.FieldAngle; if(+bm.a.LuminousFlux>0) ph.lm=Math.round(+bm.a.LuminousFlux); if(+bm.a.ColorTemperature>0) ph.k=Math.round(+bm.a.ColorTemperature); if(bm.a.LampType) ph.lt=bm.a.LampType; if(bm.a.BeamType) ph.bt=bm.a.BeamType; }
   const wheelOf=A=>{ const m=String(A||'').match(/^(Color|Gobo|Prism|AnimationWheel)(\d+)/); if(!m) return -1; const nm=m[1]==='AnimationWheel'?'Animation':m[1]; return WI[m[1]+m[2]]!=null?WI[m[1]+m[2]]:WI[nm+m[2]]!=null?WI[nm+m[2]]:WI[nm]!=null?WI[nm]:-1; };
   const T=[], TI=new Map(), M={}; let zmin=1e9, zmax=-1e9;
   for(const md of all(ft,'DMXMode')){
@@ -251,6 +251,24 @@ function fxpFromOFL(j){
   const ph={}; if(lens){ ph.z=[lens[0],lens[1]]; ph.ba=Math.round((lens[0]+lens[1])/2*10)/10; } if(bulb.lumens) ph.lm=bulb.lumens; if(bulb.colorTemperature) ph.k=bulb.colorTemperature; if(bulb.type) ph.lt=bulb.type;
   return {p:{v:1,ph,w:W,t:T,m:M},refs};
 }
+
+// Cihazın türü (planda ve kütüphanede doğru simge): ada değil cihazın gerçek özelliklerine bakar
+function fxpType(p,name){ const n=String(name||'').toLowerCase(), A=new Set(), K=new Set();
+  for(const ch of Object.values((p&&p.m)||{})) for(const c of ch){ A.add(c[1]); for(const e of (p.t[c[4]]||[])) K.add(e[3]); }
+  const has=re=>{ for(const a of A) if(re.test(a)) return true; return false; }, W=(p&&p.w)||[], ph=(p&&p.ph)||{}, bt=String(ph.bt||'').toLowerCase();
+  const gobo=W.some(w=>w.k==='g'&&w.s.length>1)||has(/^Gobo\d/), mix=has(/^ColorAdd_|^ColorSub_|^HSB_/), zmax=ph.z?Math.max(ph.z[0],ph.z[1]):(ph.ba||0);
+  if(has(/^(Fog|Haze)/)||/\b(hazer|haze|fog|smoke|fazer)\b/.test(n)) return 'hazer';
+  if(has(/^Pan$/)&&has(/^Tilt$/)){ if(/\bbeam\b|sharpy/.test(n)) return 'beam'; if(/\bwash\b|aura|spiider|\bbee ?eye\b/.test(n)) return 'wash'; if(/\bspot\b|profile/.test(n)) return 'spot';
+    if(gobo) return zmax&&zmax<=8?'beam':'spot'; return 'wash'; }
+  if(/blinder|molefay/.test(n)) return 'blinder';
+  if(/follow ?spot|takip/.test(n)) return 'follow';
+  if(/strobe|atomic|\bjdc\b/.test(n)) return 'strobe';
+  if(/\bbar\b|batten|strip|tube|linear/.test(n)) return 'bar';
+  if(/fresnel/.test(n)||bt==='fresnel') return 'fresnel';
+  if(/\bpc\b/.test(n)||bt==='pc') return 'pc';
+  if(has(/^Blade/)||/profile|ellipsoidal|leko|source ?four|\bers\b|zoomspot/.test(n)) return 'profile';
+  if(!mix&&K.has('ST')&&!K.has('D')) return 'strobe';
+  return 'par'; }
 
 // ---- Orijinal özellik paketleri (vendor/fx/*.js): sıkıştırılmış, ihtiyaç anında yüklenir ----
 function fxpHash(s){ let h=0x811c9dc5; s=String(s); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h>>>0; }

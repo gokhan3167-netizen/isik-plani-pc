@@ -1,0 +1,18 @@
+Işık Planı
+© 2026 Gökhan Gülçebi. Tüm hakları saklıdır.
+İletişim / izin talepleri: isikplani.destek@gmail.com
+
+Bu yazılımın (kaynak kodu, arayüz tasarımı, simgeleri, metinleri ve
+belgeleri dahil) tüm fikri ve sınai hakları Gökhan Gülçebi'ye aittir.
+Sahibinin yazılı izni olmadan kopyalanamaz, değiştirilemez, başka bir
+ürüne dahil edilemez, satılamaz, kiralanamaz veya dağıtılamaz.
+
+Uygulamanın resmi kanallardan (Google Play, App Store, resmi web
+adresi ve resmi masaüstü sürümleri) indirilip kişisel ve mesleki işler
+için kullanılmasına izin verilir.
+
+Üçüncü taraf bileşenler kendi lisanslarına tabidir:
+- three.js (MIT), jsPDF (MIT), JSZip (MIT / GPLv3 ikili lisans, MIT kapsamında kullanılır),
+  pdf.js (Apache 2.0), Electron (MIT), Capacitor (MIT)
+- Open Fixture Library verileri (MIT)
+- GDTF profilleri ilgili üreticilere aittir.

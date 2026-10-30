@@ -1,9 +1,12 @@
 {
   "name": "isik-plani-masaustu",
-  "version": "4.9.0",
+  "version": "5.7.5",
   "private": true,
   "description": "Işık Planı – sahne ışık planı ve rider çizimi (Windows / Mac)",
-  "author": "Işık Planı",
+  "author": {
+    "name": "Gökhan Gülçebi",
+    "email": "isikplani.destek@gmail.com"
+  },
   "main": "main.js",
   "scripts": {
     "vendor": "node scripts/vendor.mjs",
@@ -21,7 +24,8 @@
     "jspdf": "2.5.1",
     "jszip": "3.10.1",
     "three": "0.128.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "pdfjs-dist": "3.11.174"
   },
   "build": {
     "appId": "com.isikplani.desktop",
@@ -67,7 +71,8 @@
         "repo": "isik-plani-pc",
         "releaseType": "release"
       }
-    ]
+    ],
+    "copyright": "© 2026 Gökhan Gülçebi"
   },
   "dependencies": {
     "electron-updater": "6.3.9"
@@ -75,5 +80,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/gokhan3167-netizen/isik-plani-pc.git"
-  }
+  },
+  "license": "UNLICENSED"
 }

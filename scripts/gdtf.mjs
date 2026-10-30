@@ -110,7 +110,7 @@ function fxpFromGDTF(ft){
   all(ft,'Wheel').forEach(w=>{ const wi=W.length; let hasImg=false; const sl=kids(w,'Slot').map((s,k)=>{ const col=s.a.Color?fxpCie(s.a.Color):''; if(s.a.MediaFileName){ media.push([wi,k,s.a.MediaFileName]); hasImg=true; } return [s.a.Name||'',col&&col!=='ffffff'?col:'','',kids(s,'Facet').length]; });
     const n=w.a.Name||('Wheel'+wi), k=/^colou?r/i.test(n)?'c':/^gobo/i.test(n)?'g':/^prism/i.test(n)?'p':/^anim/i.test(n)?'a':sl.some(s=>s[3])?'p':hasImg?'g':'c'; WI[n]=wi; W.push({n,k,s:sl}); });
   const ph={}, bm=all(ft,'Beam')[0];
-  if(bm){ if(+bm.a.BeamAngle>0) ph.ba=+bm.a.BeamAngle; if(+bm.a.FieldAngle>0) ph.fa=+bm.a.FieldAngle; if(+bm.a.LuminousFlux>0) ph.lm=Math.round(+bm.a.LuminousFlux); if(+bm.a.ColorTemperature>0) ph.k=Math.round(+bm.a.ColorTemperature); if(bm.a.LampType) ph.lt=bm.a.LampType; }
+  if(bm){ if(+bm.a.BeamAngle>0) ph.ba=+bm.a.BeamAngle; if(+bm.a.FieldAngle>0) ph.fa=+bm.a.FieldAngle; if(+bm.a.LuminousFlux>0) ph.lm=Math.round(+bm.a.LuminousFlux); if(+bm.a.ColorTemperature>0) ph.k=Math.round(+bm.a.ColorTemperature); if(bm.a.LampType) ph.lt=bm.a.LampType; if(bm.a.BeamType) ph.bt=bm.a.BeamType; }
   const wheelOf=A=>{ const m=String(A||'').match(/^(Color|Gobo|Prism|AnimationWheel)(\d+)/); if(!m) return -1; const nm=m[1]==='AnimationWheel'?'Animation':m[1]; return WI[m[1]+m[2]]!=null?WI[m[1]+m[2]]:WI[nm+m[2]]!=null?WI[nm+m[2]]:WI[nm]!=null?WI[nm]:-1; };
   const T=[], TI=new Map(), M={}; let zmin=1e9, zmax=-1e9;
   for(const md of all(ft,'DMXMode')){
@@ -225,6 +225,24 @@ function fxpFromOFL(j){
   return {p:{v:1,ph,w:W,t:T,m:M},refs};
 }
 
+// Cihazın türü (planda ve kütüphanede doğru simge): ada değil cihazın gerçek özelliklerine bakar
+function fxpType(p,name){ const n=String(name||'').toLowerCase(), A=new Set(), K=new Set();
+  for(const ch of Object.values((p&&p.m)||{})) for(const c of ch){ A.add(c[1]); for(const e of (p.t[c[4]]||[])) K.add(e[3]); }
+  const has=re=>{ for(const a of A) if(re.test(a)) return true; return false; }, W=(p&&p.w)||[], ph=(p&&p.ph)||{}, bt=String(ph.bt||'').toLowerCase();
+  const gobo=W.some(w=>w.k==='g'&&w.s.length>1)||has(/^Gobo\d/), mix=has(/^ColorAdd_|^ColorSub_|^HSB_/), zmax=ph.z?Math.max(ph.z[0],ph.z[1]):(ph.ba||0);
+  if(has(/^(Fog|Haze)/)||/\b(hazer|haze|fog|smoke|fazer)\b/.test(n)) return 'hazer';
+  if(has(/^Pan$/)&&has(/^Tilt$/)){ if(/\bbeam\b|sharpy/.test(n)) return 'beam'; if(/\bwash\b|aura|spiider|\bbee ?eye\b/.test(n)) return 'wash'; if(/\bspot\b|profile/.test(n)) return 'spot';
+    if(gobo) return zmax&&zmax<=8?'beam':'spot'; return 'wash'; }
+  if(/blinder|molefay/.test(n)) return 'blinder';
+  if(/follow ?spot|takip/.test(n)) return 'follow';
+  if(/strobe|atomic|\bjdc\b/.test(n)) return 'strobe';
+  if(/\bbar\b|batten|strip|tube|linear/.test(n)) return 'bar';
+  if(/fresnel/.test(n)||bt==='fresnel') return 'fresnel';
+  if(/\bpc\b/.test(n)||bt==='pc') return 'pc';
+  if(has(/^Blade/)||/profile|ellipsoidal|leko|source ?four|\bers\b|zoomspot/.test(n)) return 'profile';
+  if(!mix&&K.has('ST')&&!K.has('D')) return 'strobe';
+  return 'par'; }
+
 // ---- Orijinal özellik paketleri (vendor/fx/*.js): sıkıştırılmış, ihtiyaç anında yüklenir ----
 function fxpHash(s){ let h=0x811c9dc5; s=String(s); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h>>>0; }
 function fxpWriteShards(dir,groups){ mkdirSync(dir,{recursive:true}); let n=0, bytes=0;
@@ -240,14 +258,17 @@ async function gdtfDetail(buf){ const z=readZip(buf), x=z.read('description.xml'
   for(const [wi,k,mf] of media){ const nm=[`wheels/${mf}.png`,`wheels/${mf}`,`wheels/${mf}.svg`,`wheels/${mf}.jpg`].find(n=>z.files.has(n)); if(!nm) continue;
     let b=null; try{ b=z.read(nm); }catch(_){ } if(!b) continue; const im=await goboImg(b,/\.svg$/i.test(nm)); if(!im) continue;
     const h=createHash('sha1').update(im).digest('hex').slice(0,14); imgs[h]=im; if(p.w[wi]&&p.w[wi].s[k]) p.w[wi].s[k][2]='h:'+h; }
-  return {p,imgs}; }
+  let th=null; const tn=['thumbnail.png','thumbnail.svg'].find(n=>z.files.has(n)); if(tn&&FX_DETAIL){ try{ th=await thumbImg(z.read(tn),/svg$/.test(tn)); }catch(_){ } }
+  return {p,imgs,th}; }
+async function thumbImg(buf,svg){ if(SHARP===undefined) await goboImg(Buffer.alloc(0)); if(!SHARP) return null;
+  try{ const out=await SHARP(buf,{density:svg?96:72}).resize(48,48,{fit:'contain',background:{r:0,g:0,b:0,alpha:0}}).png({palette:true,colours:48,compressionLevel:9}).toBuffer(); return 'data:image/png;base64,'+out.toString('base64'); }catch(_){ return null; } }
 // ---- GDTF Share API (çerezli oturum) ----
 let cookie='';
 async function api(path,opt={}){ const h=Object.assign({},opt.headers||{}); if(cookie) h.Cookie=cookie; const r=await fetch(API+path,Object.assign({},opt,{headers:h}));
   const sc=typeof r.headers.getSetCookie==='function'?r.headers.getSetCookie():(r.headers.get('set-cookie')?[r.headers.get('set-cookie')]:[]); if(sc.length) cookie=sc.map(c=>c.split(';')[0]).join('; '); return r; }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 try{
-  if(process.env.GDTF_TEST_DIR){ const fs=await import('fs'); const out=[], P={}, I={}; for(const fn of fs.readdirSync(process.env.GDTF_TEST_DIR).filter(n=>/\.gdtf$/i.test(n))){ const buf=fs.readFileSync(process.env.GDTF_TEST_DIR+'/'+fn), rid='t'+fxpHash(fn); const e=parseGDTF(buf); if(!e) continue; e.rid=rid; const d=await gdtfDetail(buf); if(d){ e.fp='g:'+rid; (P['g'+(fxpHash(rid)%64)]=P['g'+(fxpHash(rid)%64)]||{})[rid]=d.p; for(const [h,im] of Object.entries(d.imgs)) (I['i'+(parseInt(h.slice(0,4),16)%64)]=I['i'+(parseInt(h.slice(0,4),16)%64)]||{})[h]=im; } out.push(e); }
+  if(process.env.GDTF_TEST_DIR){ const fs=await import('fs'); const out=[], P={}, I={}; for(const fn of fs.readdirSync(process.env.GDTF_TEST_DIR).filter(n=>/\.gdtf$/i.test(n))){ const buf=fs.readFileSync(process.env.GDTF_TEST_DIR+'/'+fn), rid='t'+fxpHash(fn); const e=parseGDTF(buf); if(!e) continue; e.rid=rid; const d=await gdtfDetail(buf); if(d){ e.t=fxpType(d.p,e.m); if(d.th){ const h=createHash('sha1').update(d.th).digest('hex').slice(0,14); (I['i'+(parseInt(h.slice(0,4),16)%64)]=I['i'+(parseInt(h.slice(0,4),16)%64)]||{})[h]=d.th; e.th='h:'+h; } e.fp='g:'+rid; (P['g'+(fxpHash(rid)%64)]=P['g'+(fxpHash(rid)%64)]||{})[rid]=d.p; for(const [h,im] of Object.entries(d.imgs)) (I['i'+(parseInt(h.slice(0,4),16)%64)]=I['i'+(parseInt(h.slice(0,4),16)%64)]||{})[h]=im; } out.push(e); }
     mkdirSync(outDir,{recursive:true}); writeFileSync(outDir+'/gdtf-library.js','window.GDTF_LIB='+JSON.stringify({v:1,date:'test',lib:out})+';\n'); console.log(fxpWriteShards(outDir+'/fx',P),fxpWriteShards(outDir+'/fx',I),out.length); process.exit(0); }
   if(!USER||!PASS){ console.log('GDTF_USER / GDTF_PASS tanımlı değil; GDTF kütüphanesi atlandı.'); process.exit(0); }
   const lr=await api('login.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:USER,password:PASS})}); const lj=await lr.json().catch(()=>({}));
@@ -262,6 +283,8 @@ try{
   // Önbellek (v2): okunmuş özet + orijinal özellik profili + küçültülmüş gobo resimleri (dosyanın kendisi değil)
   const C2=CACHE+'/v2'; mkdirSync(C2,{recursive:true}); const PROF={}, IMGS={};
   const keep=(it,d)=>{ const e=d&&d.e; if(!e||!e.m){ bad++; return; } if(!e.b) e.b=it.manufacturer||''; e.rid=it.rid;
+    if(d.p){ try{ e.t=fxpType(d.p,e.m); }catch(_){ } }
+    if(FX_DETAIL&&d.th){ const h=createHash('sha1').update(d.th).digest('hex').slice(0,14), iid='i'+(parseInt(h.slice(0,4),16)%64); (IMGS[iid]=IMGS[iid]||{})[h]=d.th; e.th='h:'+h; }
     if(FX_DETAIL&&d.p){ e.fp='g:'+it.rid; const sid='g'+(fxpHash(it.rid)%64); (PROF[sid]=PROF[sid]||{})[it.rid]=d.p; for(const [h,im] of Object.entries(d.imgs||{})){ const iid='i'+(parseInt(h.slice(0,4),16)%64); (IMGS[iid]=IMGS[iid]||{})[h]=im; } }
     out.push(e); };
   async function worker(){ while(i<items.length){ const it=items[i++], fp=`${C2}/${it.rid}.json`;
@@ -269,7 +292,7 @@ try{
       let buf=null; for(let t=0;t<3&&!buf;t++){ try{ const r=await api('downloadFile.php?rid='+it.rid); const b=Buffer.from(await r.arrayBuffer()); if(r.ok&&b[0]===0x50&&b[1]===0x4B) buf=b; else await sleep(800); }catch(_){ await sleep(1500); } }
       await sleep(150); if(!buf){ bad++; continue; } dl++;
       let d={e:null}; try{ d.e=parseGDTF(buf); }catch(_){ }
-      if(d.e){ try{ const x=await gdtfDetail(buf); if(x){ d.p=x.p; d.imgs=x.imgs; } }catch(_){ } }
+      if(d.e){ try{ const x=await gdtfDetail(buf); if(x){ d.p=x.p; d.imgs=x.imgs; d.th=x.th; } }catch(_){ } }
       try{ writeFileSync(fp,JSON.stringify(d)); }catch(_){}
       keep(it,d); } }
   await Promise.all([worker(),worker(),worker()]);
@@ -277,6 +300,6 @@ try{
   mkdirSync(outDir,{recursive:true});
   if(FX_DETAIL){ const a=fxpWriteShards(outDir+'/fx',PROF), b=fxpWriteShards(outDir+'/fx',IMGS); console.log(`Orijinal özellikler: ${Object.values(PROF).reduce((n,o)=>n+Object.keys(o).length,0)} cihaz, ${Object.values(IMGS).reduce((n,o)=>n+Object.keys(o).length,0)} gobo resmi (${Math.round((a.bytes+b.bytes)/1048576)} MB)`); }
   writeFileSync(outDir+'/gdtf-library.js','/* Kaynak: GDTF Share (gdtf-share.com) — izinle — '+date+' */\nwindow.GDTF_LIB='+JSON.stringify({v:1,date,lib:out})+';\n');
-  writeFileSync('gdtf-kutuphane.json',JSON.stringify({kind:'isik-plani-kutuphane',source:'GDTF Share (gdtf-share.com)',date,count:out.length,lib:out.map(e=>{ const r=Object.assign({},e); delete r.fp; return r; })}));
+  writeFileSync('gdtf-kutuphane.json',JSON.stringify({kind:'isik-plani-kutuphane',source:'GDTF Share (gdtf-share.com)',date,count:out.length,lib:out.map(e=>{ const r=Object.assign({},e); delete r.fp; delete r.th; return r; })}));
   console.log(`${out.length} cihaz kaydedildi (${dl} yeni indirme, ${bad} okunamadı): ${outDir}/gdtf-library.js ve gdtf-kutuphane.json`);
 }catch(e){ console.warn('GDTF kütüphanesi oluşturulamadı ('+e.message+'). Program diğer kütüphanelerle çalışmaya devam eder.'); process.exit(0); }

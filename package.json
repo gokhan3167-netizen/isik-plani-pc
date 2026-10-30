@@ -1,6 +1,6 @@
 {
   "name": "isik-plani-masaustu",
-  "version": "4.8.0",
+  "version": "4.9.0",
   "private": true,
   "description": "Işık Planı – sahne ışık planı ve rider çizimi (Windows / Mac)",
   "author": "Işık Planı",
@@ -20,7 +20,8 @@
     "@fontsource/barlow-condensed": "^5.0.0",
     "jspdf": "2.5.1",
     "jszip": "3.10.1",
-    "three": "0.128.0"
+    "three": "0.128.0",
+    "sharp": "^0.33.5"
   },
   "build": {
     "appId": "com.isikplani.desktop",

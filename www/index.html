@@ -432,6 +432,25 @@ body.quiet .toast{padding:7px 12px;font-size:13px}
   body .toast{bottom:calc(66px + env(safe-area-inset-bottom,0px));font-size:13px;padding:8px 12px}
   body .zoomtag{display:none}
 }
+/* Telefon: canlı panel ve kontroller ekranı kapatmasın */
+#area.lpmini{--lph:44px}
+#area.lpmini .lp-b{display:none}
+@media (max-width:899px){
+  :root{--lph:min(40vh,330px)}
+  #area.lpmini{--lph:44px}
+  body .lp-h{padding:5px 6px;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  body .lp-h .seg button{padding:6px 8px;font-size:12.5px;white-space:nowrap}
+  body .lp-h .btn.sm{padding:6px 8px}
+  body .lp-b{padding:6px 10px}
+  body .lp-b .lrow{grid-template-columns:62px 1fr 44px;margin:3px 0}
+  body .lp-b .cols{gap:0 14px}
+  body .lp-b .acts{margin:4px 0;gap:5px}
+  body .ptabs{margin:4px 0}
+  body .ptabs button{padding:6px 8px;font-size:12.5px}
+  body.lpo #area .vbar,body.lpo #area .handbtn,body.lpo #area .v3ctl,body.lpo #area .sbar.h{display:none!important}
+  body.lpo #area .v3tb{top:8px}
+  body.lpo #area .livebadge{display:none!important}
+}
 </style>
 <script defer src="vendor/ofl-library.js"></script><script defer src="vendor/gdtf-library.js"></script>
 </head>
@@ -489,7 +508,7 @@ window.addEventListener('error',function(e){
       <div class="updbar" id="updBar" hidden></div>
       <button class="livebadge" id="liveBadge">● CANLI</button>
       <div class="livep" id="liveP" role="region" aria-label="Canlı">
-        <div class="lp-h"><div class="seg" id="lpTabs"><button data-lpt="prog" class="on">Test konsolu</button><button data-lpt="cues">Cue listesi</button><button data-lpt="net">Konsol bağlantısı</button></div><label class="check" style="margin:0 0 0 auto"><input type="checkbox" id="liveOn"> Canlı görüntü</label><button class="btn sm" id="lpClose">Kapat</button></div>
+        <div class="lp-h"><div class="seg" id="lpTabs"><button data-lpt="prog" class="on">Test konsolu</button><button data-lpt="cues">Cue listesi</button><button data-lpt="net">Konsol bağlantısı</button></div><label class="check lpon" style="margin:0 0 0 auto"><input type="checkbox" id="liveOn"> <span class="lt">Canlı görüntü</span><span class="st">Canlı</span></label><button class="btn sm lpmin" id="lpMin" title="Paneli küçült / büyüt" aria-label="Paneli küçült">▾</button><button class="btn sm" id="lpClose">Kapat</button></div>
         <div class="lp-b" id="lpBody"></div>
       </div>
       <div class="vbar" id="vbar" role="tablist" aria-label="Görünüm"><button data-view="split" title="Ekranı ikiye böl: solda plan, sağda canlı görünüm"><span class="lt">◫ Böl</span><span class="st">◫</span></button><button data-view="plan" class="on">Üstten</button><button data-view="front">Önden</button><button data-view="side">Yandan</button><button data-view="persp"><span class="lt">Perspektif</span><span class="st">Persp.</span></button><button data-view="3d">3D</button></div>
@@ -799,7 +818,7 @@ function oflBuiltin(){
   const arr=Array.isArray(a)?a:(a&&Array.isArray(a.lib)?a.lib:[]); OFL_DATE=a&&a.date||'';
   OFLB=arr.map((r,i)=>Array.isArray(r)?({id:'f'+i,brand:r[0],model:r[1],type:TYPES[r[2]]?r[2]:'spot',src:'oflb',watt:r[4]?String(r[4]):'',weight:r[5]?String(r[5]):'',dims:Array.isArray(r[6])?r[6]:null,
     modes:String(r[3]).split('|').map(m=>{ const q=m.split(':'); if(q.length>=3&&/^\d+$/.test(q[q.length-2])){ const tk=q.pop(), ch=+q.pop(); return [q.join(':'),ch,tk]; } const j=m.lastIndexOf(':'); return [m.slice(0,j),+m.slice(j+1)]; })})
-    :({id:'f'+i,brand:r.b||'',model:r.m||'',type:TYPES[r.t]?r.t:'spot',src:'oflb',watt:r.w?String(r.w):'',weight:r.kg?String(r.kg):'',dims:Array.isArray(r.dims)?r.dims:null,pr:r.pr||null,tr:r.tr||null,beam:r.ba||null,modes:r.modes||[]}));
+    :({id:'f'+i,brand:r.b||'',model:r.m||'',type:TYPES[r.t]?r.t:'spot',src:'oflb',watt:r.w?String(r.w):'',weight:r.kg?String(r.kg):'',dims:Array.isArray(r.dims)?r.dims:null,pr:r.pr||null,tr:r.tr||null,beam:r.ba||null,modes:r.modes||[],fp:r.fp||null}));
   OFLB_KEYS=new Set(OFLB.map(e=>libKey(e.brand,e.model)));
   return OFLB;
 }
@@ -807,7 +826,7 @@ function oflBuiltin(){
 // Gömülü GDTF kütüphanesi (paketlerde vendor/gdtf-library.js varsa)
 let GDB=null, GDB_KEYS=new Set(), GDB_DATE='';
 function gdtfBuiltin(){ if(GDB) return GDB; const a=window.GDTF_LIB; if(!a||!Array.isArray(a.lib)) return []; GDB_DATE=a.date||'';
-  GDB=a.lib.map((r,i)=>({id:'d'+i,brand:r.b||'',model:r.m||'',type:TYPES[r.t]?r.t:'spot',src:'gdtfb',modes:r.modes||[],pr:r.pr||null,tr:r.tr||null,beam:r.ba||null,size:r.sz||null,rid:r.rid}));
+  GDB=a.lib.map((r,i)=>({id:'d'+i,brand:r.b||'',model:r.m||'',type:TYPES[r.t]?r.t:'spot',src:'gdtfb',modes:r.modes||[],pr:r.pr||null,tr:r.tr||null,beam:r.ba||null,size:r.sz||null,rid:r.rid,fp:r.fp||null}));
   GDB_KEYS=new Set(GDB.map(e=>libKey(e.brand,e.model))); return GDB; }
 let EXT=[], EXT_KEYS=new Set(), EXT_INFO=null, LIBV=0, ALLC=null, ALLK='', ALLMAP=new Map();
 function setExt(d){
@@ -848,12 +867,12 @@ let numMode=null, pendingDel=null, shapeTool=null, sdraw=null, pendingVDel=null;
 const getS=id=>(st.shapes||[]).find(x=>x.id===id);
 const BEAM_DEF={profile:26,fresnel:30,pc:30,par64:25,par:25,wash:25,spot:20,beam:4,bar:30,blinder:60,strobe:90,follow:10,hazer:0,projector:30};
 function fxBeam0(f){ if(f.beam!==''&&f.beam!=null&&!isNaN(+f.beam)) return +f.beam; const e=f.lib?libById(f.lib):null; if(e&&e.beam) return e.beam; return BEAM_DEF[f.type]!=null?BEAM_DEF[f.type]:25; }
-function fxBeam(f){ let b=fxBeam0(f); const L=LIVE.on?fxLive(f):null; if(!L) return b; if(L.zoom!=null) b*=(.35+1.3*L.zoom); if(L.iris) b*=(1-.72*L.iris); if(L.frost) b*=(1+.35*L.frost); return Math.max(1.5,b); }
+function fxBeam(f){ let b=fxBeam0(f); const L=LIVE.on?fxLive(f):null; if(!L) return b; if(L.beamDeg>0) b=L.beamDeg; else if(L.zoom!=null) b*=(.35+1.3*L.zoom); if(L.iris) b*=(1-.72*L.iris); if(L.frost) b*=(1+.35*L.frost); return Math.max(1.5,b); }
 function fxDir(f){ const r=(f.rot||0)*Math.PI/180; return {x:-Math.sin(r),y:Math.cos(r)}; }
 function fxFocus0(f){ if(f.focus&&isFinite(f.focus.x)) return f.focus; const d=fxDir(f); return {x:f.x+d.x*3,y:f.y+d.y*3}; }
 function fxFocus(f){ const L=LIVE.on?fxLive(f):null; if(L&&L.tilt!=null){ const z=fxZ(f), t=Math.max(-80,Math.min(80,L.tilt))*Math.PI/180, a=((f.rot||0)+(L.pan||0))*Math.PI/180, d=z*Math.tan(t); return {x:f.x-Math.sin(a)*d,y:f.y+Math.cos(a)*d}; } return fxFocus0(f); }
 let mdrag=null, rdrag=null, suppressCtxUntil=0, tp=null;
-const APP_VER='4.8.2'; const COARSE=matchMedia('(pointer:coarse)').matches;
+const APP_VER='4.9.0'; const COARSE=matchMedia('(pointer:coarse)').matches;
 let clip=null, lastWorld={x:0,y:4}, multiMode=false, marquee=null, lp=null, rcT=null, lastPtr='mouse';
 let cam={x:0,y:5,s:40}, curVB={x:0,y:0,w:10,h:10};
 const hist=[], ptrs=new Map();
@@ -1998,7 +2017,9 @@ function renderInspector(){
     if(f.ctl==='dmx'){ const mi=modeInfo(f), A=+f.addr||0, U=+f.uni||1, cf=dmxConflicts().out.filter(([u,a,b])=>a.f===f||(b&&b.f===f));
       if(cf.length) h+=`<p style="color:var(--danger);font-weight:600;margin:-4px 0 8px">Adres çakışması: ${cf.map(([u,a,b])=>b?esc(label((a.f===f?b:a).f)):'universe sınırı aşılıyor').join(', ')}</p>`;
       h+=`<details class="box chmap"${mi.tokens?'':' open'}><summary style="cursor:pointer;font-weight:600">Kanal haritası ${mi.tokens?`(${mi.tokens.length})`:'— bilinmiyor'}</summary>`+(mi.tokens?`<div class="chgrid">${mi.tokens.map((t,i)=>`<span><b>${A?`${U}.${A+i}`:i+1}</b>${chLabel(t)}</span>`).join('')}</div>${mi.src==='guess'?'<p class="muted">Mod adından tahmin edildi; doğruluğu için kanal haritalı bir model seç.</p>':''}`
-        :`<p class="muted" style="margin:8px 0 0">Bu modelin kanal anlamları kütüphanede yok. Konsoldan canlı görselleştirme için kanal haritalı bir model seç (Open Fixture Library, GDTF ya da QLC+).</p>`)+`</details>`; }
+        :`<p class="muted" style="margin:8px 0 0">Bu modelin kanal anlamları kütüphanede yok. Konsoldan canlı görselleştirme için kanal haritalı bir model seç (Open Fixture Library, GDTF ya da QLC+).</p>`)+`</details>`;
+      { const e=f.lib?libById(f.lib):null, al=e&&!e.fp&&e.src!=='gdtf'?fxpAlias(e):null, tg=al?[...gdtfBuiltin(),...oflBuiltin()].find(x=>x.fp===al):null;
+        if(tg) h+=`<div class="box" style="margin-top:8px"><b>Orijinal kaydı var</b><p class="muted" style="margin:4px 0 6px">${esc(fullName(tg))} (${tg.src==='gdtfb'?'GDTF':'OFL'}): gerçek gobolar, renk tekeri, zoom açısı ve tüm kanal fonksiyonlarıyla. Mod ve adres buna göre olur.</p><button class="btn sm primary" data-act="fxpSwitch" data-v="${tg.id}">Orijinal kayda geç</button></div>`; } }
     { const F=fxFocus(f), dist=Math.hypot(F.x-f.x,F.y-f.y), bm=fxBeam(f);
       h+=`<div class="row">${fld('Huzme açısı (°)','beam',f.beam==null?'':f.beam,'number',`min="0" max="120" inputmode="numeric" placeholder="${(()=>{ const e=f.lib?libById(f.lib):null; return e&&e.beam?e.beam:(BEAM_DEF[f.type]!=null?BEAM_DEF[f.type]:25); })()}"`)}<div class="field"><label>Odak</label><div style="padding-top:8px;font-weight:600">${fmt(dist)} m · ışık çapı ${fmt(2*dist*Math.tan(bm/2*Math.PI/180))} m</div></div></div>`;
       h+=`<p class="muted" style="margin-top:-4px">Planda turuncu noktayı sürükleyerek projektörü istediğin yere odakla. ${f.focus?'<button class="btn sm" data-act="resetFocus">Odağı sıfırla</button>':''}</p>`; }
@@ -2286,8 +2307,9 @@ insp.addEventListener('click',e=>{
   const mr=e.target.closest('[data-mid]'); if(mr){ sel={kind:'meas',id:+mr.dataset.mid}; renderAll(); return; }
   const c=e.target.closest('[data-ctl]');
   if(c){ const f=getF(sel.id); snapshot(); f.ctl=c.dataset.ctl; save(); renderAll(); return; }
-  const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act);
+  const b=e.target.closest('[data-act]'); if(b){ ACTV=b.dataset.v; act(b.dataset.act); }
 });
+let ACTV=null;
 const gv=id=>{ const el=insp.querySelector(`[data-f="${id}"]`); return el?parseInt(el.value,10):NaN; };
 
 function act(a){
@@ -2312,6 +2334,7 @@ function act(a){
     if($('w_fon').checked) st.shapes.push({id:st.nextId++,type:'line',x1:-W/2,y1:.3,x2:W/2,y2:.3,t:'Fon perdesi',c:'#6B737E',dash:false,fill:false,sw:.08});
     sel=null; closeSheet(); save(); renderAll(); toast(`${n} çift kulis eklendi`); return;
   }
+  if(a==='fxpSwitch'){ const tg=libById(ACTV); if(tg){ snapshot(); selIds().map(getF).forEach(f=>{ if(!f) return; const n=+f.chn||0, m=tg.modes.find(x=>x[1]===n)||tg.modes[0]; Object.assign(f,{lib:tg.id,model:fullName(tg),mode:m?m[0]:'',chn:m?m[1]:f.chn}); }); save(); renderAll(); if(LIVE.panel) renderLive(); toast('Orijinal kayda geçildi; modu kontrol et'); } return; }
   if(a==='resetFocus'){ const f=getF(sel.id); if(f){ snapshot(); delete f.focus; save(); renderAll(); } return; }
   if(a==='saveVenue'){
     const name=($('vName').value||'').trim()||st.meta.venue||st.meta.title||'Mekân', withFx=$('vFx').checked;
@@ -2484,7 +2507,7 @@ function act(a){
   save(); renderAll();
 }
 const mq=matchMedia('(max-width:899px)');
-function openSheet(){ if(mq.matches) insp.classList.add('open'); else if(st.view.inspOff){ st.view.inspOff=false; save(); applyPanels(); } }
+function openSheet(){ if(mq.matches&&LIVE.panel) return; if(mq.matches) insp.classList.add('open'); else if(st.view.inspOff){ st.view.inspOff=false; save(); applyPanels(); } }
 function closeSheet(){ insp.classList.remove('open'); }
 function applyPanels(){
   const m=document.querySelector('main'), v=st.view;
@@ -2569,7 +2592,7 @@ function renderLibList(){
       else if(e.src!=='builtin') x+=`<input data-eb value="${esc(e.brand)}" placeholder="Marka" style="width:130px"><input data-em value="${esc(e.model)}" placeholder="Model" style="width:190px"><select data-cat style="min-width:150px">${typeOptions(e.type)}</select><button class="btn danger sm" data-la="del">Sil</button>`;
       x+=`</div>`;
     }
-    return `<div class="li${open?' open':''}" data-id="${e.id}"><button class="li-row">${icon(e.type)}<span><b>${esc(fullName(e))}</b><small>${TYPES[e.type].name} · ${e.modes.map(m=>m[1]?`${esc(m[0])} ${m[1]} kn`:esc(m[0])).join(', ')}${e.modes.some(m=>m[2])?' · <b style="color:#2E9E5B">kanal haritalı</b>':''}${e.watt?` · ${esc(e.watt)} W`:''}${e.weight?` · ${esc(e.weight)} kg`:''}</small></span><span class="src">${({builtin:'Hazır',oflb:'OFL',gdtfb:'GDTF',ext:(EXT_INFO&&EXT_INFO.tag)||'Dış',gdtf:'GDTF',ofl:'OFL',qlc:'QLC+',custom:'Özel'})[e.src]||'Senin'}</span></button>${x}</div>`;
+    return `<div class="li${open?' open':''}" data-id="${e.id}"><button class="li-row">${icon(e.type)}<span><b>${esc(fullName(e))}</b><small>${TYPES[e.type].name} · ${e.modes.map(m=>m[1]?`${esc(m[0])} ${m[1]} kn`:esc(m[0])).join(', ')}${e.modes.some(m=>m[2])?' · <b style="color:#2E9E5B">kanal haritalı</b>':''}${e.fp||e.src==='gdtf'?' · <b style="color:#3A86FF">orijinal özellikler</b>':''}${e.watt?` · ${esc(e.watt)} W`:''}${e.weight?` · ${esc(e.weight)} kg`:''}</small></span><span class="src">${({builtin:'Hazır',oflb:'OFL',gdtfb:'GDTF',ext:(EXT_INFO&&EXT_INFO.tag)||'Dış',gdtf:'GDTF',ofl:'OFL',qlc:'QLC+',custom:'Özel'})[e.src]||'Senin'}</span></button>${x}</div>`;
   }).join('')+(list.length>300?`<div class="empty">İlk 300 sonuç gösteriliyor, aramayı daralt.</div>`:'')+
   `<p class="muted" style="padding:12px 16px">Hazır listedeki DMX kanal sayıları yaygın modlara göredir; turneden önce cihaz kılavuzundan doğrula. Kesin veri için cihazın GDTF, Open Fixture Library (.json) ya da QLC+ (.qxf) dosyasını içe aktar.</p>`;
 }
@@ -2821,6 +2844,7 @@ async function parseGDTFFile(file,fname){
         const zf=zip.file(`wheels/${mf}.png`)||zip.file(`wheels/${mf}`)||zip.file(`wheels/${mf}.jpg`)||zip.file(`wheels/${mf}.svg`); if(!zf) continue;
         const b64=await zf.async('base64'); imgs[k+1]=`data:image/${/\.svg$/i.test(zf.name)?'svg+xml':/\.jpe?g$/i.test(zf.name)?'jpeg':'png'};base64,${b64}`; } break; }
     if(Object.keys(imgs).length){ GOBOS[libKey(brand,model)]=imgs; IDB.set('gobos',GOBOS).catch(()=>{}); } }catch(_){}
+  try{ const fp=await fxpFromZip(zip); if(fp){ FXP.c.set('u:'+libKey(brand,model),fp); FXP.pend.add('u:'+libKey(brand,model)); IDB.set('fxp:'+libKey(brand,model),fp).catch(()=>{}); } }catch(_){}
   try{ const models=[...xml.getElementsByTagName('Model')], gr=xml.getElementsByTagName('Geometries')[0], g0=gr?[...gr.children].find(x=>x.getAttribute('Model')):null;
     const md=(g0&&models.find(m=>m.getAttribute('Name')===g0.getAttribute('Model')))||models[0]||null;
     if(md){ const L=+md.getAttribute('Length')||0, Wd=+md.getAttribute('Width')||0, H=+md.getAttribute('Height')||0; if(L>.04&&Wd>.04) ent.size=[L,Wd,H];
@@ -3329,13 +3353,14 @@ function fill3D(target){
     const O=md.origin, F=fxFocus(f), dir=new TH.Vector3(F.x-O.x,-O.y,F.y-O.z); if(dir.length()<.05) continue;
     const L=dir.length(), sp=L*Math.tan(Math.min(170,bm)/2*Math.PI/180), c=new TH.Color(beamColor(f)), strong=selIdsNow.has(f.id);
     const K=liveK(f)*(strong?1.35:1), tx=beamTex(TH), LV=LIVE.on?fxLive(f):null, gobo=LV?LV.gobo||0:0, frost=LV?LV.frost||0:0, prism=LV&&LV.prism;
-    const sharp=frost>.5?0:Math.max(0,Math.min(2,Math.round(2-Math.abs(((LV&&LV.focus!=null)?LV.focus:.5)-.5)*4-frost*2))), rot=LV&&LV.grot?(performance.now()/1000)*LV.grot*2.5:0;
+    const sharp=frost>.5?0:Math.max(0,Math.min(2,Math.round(2-Math.abs(((LV&&LV.focus!=null)?LV.focus:.5)-.5)*4-frost*2))), rot=LV&&LV.gangle!=null?LV.gangle:LV&&LV.grot?(performance.now()/1000)*LV.grot*2.5:0;
     if(LV&&LV.grot) LIVE.sAt=performance.now();
-    const ptex=(gobo||sharp<2)?poolTex(TH,gobo,sharp,f):tx.pool, nD=dir.clone().normalize();
+    const gim=LV&&LV.gimgs&&LV.gimgs.length?LV.gimgs.map(fxpImg).filter(Boolean):null, ptex=gim&&gim.length?poolTexI(TH,gim,sharp):(gobo||sharp<2)?poolTex(TH,gobo,sharp,f):tx.pool, nD=dir.clone().normalize();
+    const pn=prism?Math.max(2,Math.min(COARSE?4:8,(LV&&LV.prismN)||3)):1, prot=LV&&LV.prismRot?(performance.now()/1000)*(Math.abs(LV.prismRot)<=1?LV.prismRot*3:LV.prismRot*.2):rot*.3;
     // Prizma: huzmeyi üçe böl
     const dirs=[nD]; if(prism){ dirs.length=0; const perp=new TH.Vector3().crossVectors(nD,new TH.Vector3(0,1,0)); if(perp.length()<.01) perp.set(1,0,0); perp.normalize(); const off=Math.min(.35,Math.tan(bm/2*Math.PI/180)*1.1);
-      for(let q=0;q<3;q++){ const p2=perp.clone().applyAxisAngle(nD,q*2.094+rot*.3); dirs.push(nD.clone().addScaledVector(p2,off).normalize()); } }
-    for(const d2 of dirs){ const Kp=prism?K*.55:K, L2=prism?(-O.y/(d2.y||-1e-3)):L, Fp=prism?{x:O.x+d2.x*L2,y:O.z+d2.z*L2}:F, LL=prism?Math.max(.5,O.distanceTo(new TH.Vector3(Fp.x,0,Fp.y))):L, spp=LL*Math.tan(Math.min(170,bm)/2*Math.PI/180);
+      for(let q=0;q<pn;q++){ const p2=perp.clone().applyAxisAngle(nD,q*Math.PI*2/pn+prot); dirs.push(nD.clone().addScaledVector(p2,off).normalize()); } }
+    for(const d2 of dirs){ const Kp=prism?K*Math.min(.55,1.7/pn):K, L2=prism?(-O.y/(d2.y||-1e-3)):L, Fp=prism?{x:O.x+d2.x*L2,y:O.z+d2.z*L2}:F, LL=prism?Math.max(.5,O.distanceTo(new TH.Vector3(Fp.x,0,Fp.y))):L, spp=LL*Math.tan(Math.min(170,bm)/2*Math.PI/180);
       const layers=gobo?(COARSE?[.3,.6,.9]:[.2,.4,.6,.8,.97]):[1], qd=new TH.Quaternion().setFromUnitVectors(new TH.Vector3(0,1,0),d2);
       for(const lr of layers){ const cg=new TH.ConeGeometry(spp*lr,LL,gobo?64:48,1,true); cg.translate(0,-LL/2,0); cg.rotateX(Math.PI);
         const cone=new TH.Mesh(cg,new TH.ShaderMaterial({uniforms:{uColor:{value:c},uInt:{value:(.05+.34*V.haze)*Kp*(1-.45*frost)*(gobo?(COARSE?.62:.48):1)},uGobo:{value:gobo},uSeed:{value:rot+(f.id%7)*.37},uSharp:{value:sharp/2},uTex:{value:ptex},uLayer:{value:lr},uUseTex:{value:gobo?1:0}},vertexShader:BEAM_VS,fragmentShader:BEAM_FS,precision:'highp',transparent:true,depthWrite:false,side:TH.DoubleSide,blending:TH.AdditiveBlending}));
@@ -3428,6 +3453,14 @@ function poolTex(TH,gobo,sharp,f){ // sharp: 0 (bulanık) … 2 (keskin)
   else { x.fillStyle='#fff'; x.fillRect(0,0,S,S); }
   x.globalCompositeOperation='destination-in'; const g=x.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2), hard=[.97,.9,.7][sharp]; g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(hard,'rgba(255,255,255,'+(gobo?1:.85)+')'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(0,0,S,S);
   const t=new TH.CanvasTexture(cv); t.center&&t.center.set&&t.center.set(.5,.5); return GTX[key]=t; }
+function poolTexI(TH,srcs,sharp){ const key='I'+fxpHash(srcs.join('|'))+'|'+sharp; if(GTX[key]) return GTX[key];
+  const S=[48,96,256][sharp], cv=document.createElement('canvas'); cv.width=cv.height=S; const x=cv.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,S,S); let ready=true;
+  for(const src of srcs){ const I=GIMG[src]||(GIMG[src]=Object.assign(new Image(),{src})); if(!(I.complete&&I.naturalWidth)){ ready=false; I.addEventListener('load',()=>{ delete GTX[key]; try{ paneSoon(); }catch(_){} },{once:true}); continue; }
+    const c2=document.createElement('canvas'); c2.width=c2.height=S; const y=c2.getContext('2d'); y.drawImage(I,0,0,S,S); const d=y.getImageData(0,0,S,S); for(let i=0;i<d.data.length;i+=4){ const l=(d.data[i]+d.data[i+1]+d.data[i+2])/3*(d.data[i+3]/255); d.data[i]=d.data[i+1]=d.data[i+2]=255; d.data[i+3]=l; } y.putImageData(d,0,0);
+    x.globalCompositeOperation='destination-in'; x.drawImage(c2,0,0); x.globalCompositeOperation='source-over'; }
+  if(!ready){ x.clearRect(0,0,S,S); drawGobo(x,1,S); }
+  x.globalCompositeOperation='destination-in'; const g=x.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2), hard=[.97,.9,.7][sharp]; g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(hard,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(0,0,S,S);
+  const t=new TH.CanvasTexture(cv); t.center&&t.center.set&&t.center.set(.5,.5); if(ready) GTX[key]=t; return t; }
 let BTX=null;
 function beamTex(TH){ if(BTX) return BTX; const mk=(stops)=>{ const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d'), g=x.createRadialGradient(64,64,0,64,64,64); stops.forEach(([o,a])=>g.addColorStop(o,`rgba(255,255,255,${a})`)); x.fillStyle=g; x.fillRect(0,0,128,128); return new TH.CanvasTexture(c); };
   BTX={pool:mk([[0,1],[.55,.85],[.82,.35],[1,0]]),glow:mk([[0,1],[.18,.75],[.45,.18],[1,0]])}; return BTX; }
@@ -3466,6 +3499,7 @@ function setView(v){
   $('vwrap').classList.toggle('on',!!kind); const planVis=splitOn||view==='plan'; svg.style.display=planVis?'':'none'; $('zoomTag').style.display=planVis?'':'none'; $('handBtn').style.display=planVis?'':'none';
   if(kind!=='3d') close3D();
   const reflow=()=>{ if(wasSplit!==splitOn) fit(); else applyView(); };
+  if(kind&&mq.matches&&!st.view.palOff){ st.view.palOff=true; applyPanels(); }
   if(!kind){ $('vwrap').innerHTML=''; requestAnimationFrame(reflow); return; }
   if(!splitOn){ placing=null; shapeTool=null; if(measMode) setMeas(false); if(numMode) endNum(); renderPalette(); closeSheet(); }
   else toast('Bölünmüş ekran: soldaki planda yaptığın her değişiklik sağda canlı görünür.');
@@ -3761,6 +3795,304 @@ $('impBody').addEventListener('click',e=>{
 $('handBtn').addEventListener('click',()=>{ handMode=!handMode; $('handBtn').classList.toggle('on',handMode); $('handBtn').setAttribute('aria-pressed',handMode); svg.classList.toggle('hand',handMode);
   toast(handMode?'Kaydırma modu açık: tek parmakla planı kaydır. Düzenlemek için tekrar bas.':'Kaydırma modu kapalı'); });
 window.addEventListener('resize',()=>{ try{ updScrollbars(); }catch(_){} });
+// ---- Orijinal cihaz özellikleri (profil): GDTF ve OFL'den kanal fonksiyonları, tekerler, fiziksel değerler ----
+// Profil: {v:1, ph:{ba,fa,lm,k,z:[min,max]}, w:[{n,k,s:[[ad,renk,resim,faset]]}], t:[[giriş…]], m:{mod:[[ofsetler,nitelik,grup,varsayılan,tablo,ad]]}}
+// Giriş: [dmxBaş, dmxSon, etiket, tür, fiz1, fiz2, teker, yuva, modeMaster]
+const FXP_GRP={D:'Yoğunluk',P:'Konum',C:'Renk',G:'Gobo',B:'Işın',F:'Fokus',X:'Kontrol'};
+function fxpCie(s){ const [x,y,Y]=String(s||'').split(',').map(Number); if(!(y>0)) return null; const YY=Y||100, X=x*YY/y, Z=(1-x-y)*YY/y;
+  let r=3.2406*X-1.5372*YY-.4986*Z, g=-.9689*X+1.8758*YY+.0415*Z, b=.0557*X-.204*YY+1.057*Z; const mx=Math.max(r,g,b); if(!(mx>0)) return null; [r,g,b]=[r,g,b].map(v=>Math.max(0,v/mx));
+  const gm=v=>v<=.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-.055; return [r,g,b].map(v=>Math.round(gm(v)*255).toString(16).padStart(2,'0')).join(''); }
+function fxpDmx(s,bytes){ const m=String(s==null?'0/1':s).match(/^(\d+)(?:\/(\d+))?/); if(!m) return 0; let v=+m[1], b=+(m[2]||1); while(b<bytes){ v=v*256; b++; } while(b>bytes){ v=Math.floor(v/256); b--; } return v; }
+function fxpKind(A){ A=String(A||'');
+  if(/^Dimmer$/.test(A)) return 'D'; if(/^Pan$/.test(A)) return 'P'; if(/^Tilt$/.test(A)) return 'T';
+  let m=A.match(/^ColorAdd_(R|G|B|W|WW|CW|RY|GY|UV)$/); if(m) return ({R:'R',G:'G',B:'B',W:'W',WW:'W',CW:'W',RY:'A',GY:'L',UV:'UV'})[m[1]];
+  m=A.match(/^ColorSub_(C|M|Y)$/); if(m) return m[1]; if(/^(CTO|CTC|CTB)$/.test(A)) return 'CT'; if(/^HSB_Hue/.test(A)) return 'HU'; if(/^HSB_Saturation/.test(A)) return 'SA';
+  if(/^(Color|Gobo|Prism|AnimationWheel)\d+(WheelIndex)?$/.test(A)) return /^Prism/.test(A)?'PS':'S';
+  if(/^(Color|Gobo|AnimationWheel)\d+(WheelShake|Shake|SelectShake)$/.test(A)) return 'SS';
+  if(/^(Color|Gobo|AnimationWheel|Prism)\d+(SelectSpin)$/.test(A)) return 'SR';
+  if(/^(Color|Gobo|AnimationWheel)\d+(WheelSpin|WheelRandom|WheelAudio)$/.test(A)) return 'WR';
+  if(/^(Gobo|AnimationWheel)\d+Pos$/.test(A)) return 'GI'; if(/^(Gobo|AnimationWheel)\d+(PosRotate|PosShake|PosSwing)$/.test(A)) return 'GR';
+  if(/^Prism\d+Pos$/.test(A)) return 'PI'; if(/^Prism\d+PosRotate$/.test(A)) return 'PRR';
+  if(/^Zoom$/.test(A)) return 'Z'; if(/^Focus\d*$/.test(A)) return 'F'; if(/^Iris$/.test(A)) return 'I'; if(/^Frost\d*$/.test(A)) return 'FR';
+  if(/^Shutter\d+$/.test(A)) return 'SH'; if(/^Shutter\d+Strobe|^StrobeFrequency|^StrobeRate/.test(A)) return 'ST';
+  if(/^NoFeature$/.test(A)) return 'N'; if(/Macro/.test(A)) return 'FX';
+  if(/Speed|Time$|Rate$/.test(A)) return 'SP'; if(/^(Effects|Iris.|Frost.|Animation|Media|Video)/.test(A)) return 'FX';
+  if(/Control|Reset|Lamp|Fixture|Display|Fan|Function|DMXInput|Curve|Mode|Blackout|Calibration|Maintenance|Power/.test(A)) return 'CTL';
+  return 'N'; }
+function fxpGroup(A){ A=String(A||'');
+  if(/^(Dimmer|Shutter|Strobe|Intensity)/.test(A)) return 'D'; if(/^(Pan|Tilt|Position|XYZ|Rot_)/.test(A)) return 'P';
+  if(/^(Color|CTO|CTC|CTB|HSB|CIE|Tint|CRI)/.test(A)) return 'C'; if(/^(Gobo|Animation|Media)/.test(A)) return 'G';
+  if(/^(Zoom|Focus)/.test(A)) return 'F'; if(/^(Iris|Prism|Frost|Beam|Blade|Effects)/.test(A)) return 'B'; return 'X'; }
+const FXP_NORM={D:1,F:1,FR:1,I:1,R:1,G:1,B:1,W:1,A:1,UV:1,L:1,C:1,M:1,Y:1,SA:1};
+const FXP_PHYS={D:1,P:1,T:1,Z:1,F:1,FR:1,I:1,CT:1,ST:1,GR:1,GI:1,WR:1,PRR:1,PI:1,SP:1,R:1,G:1,B:1,W:1,A:1,UV:1,L:1,C:1,M:1,Y:1,HU:1,SA:1};
+function fxpTable(T,TI,fns){ const key=JSON.stringify(fns); let ti=TI.get(key); if(ti==null){ ti=T.length; T.push(fns); TI.set(key,ti); } return ti; }
+// GDTF: ft = {tag,a,c} ağacındaki FixtureType düğümü. Dönüş: {p:profil, media:[[teker,yuva,dosya]]}
+function fxpFromGDTF(ft){
+  const kids=(n,t)=>n.c.filter(c=>c.tag===t), all=(n,t,o=[])=>{ for(const c of n.c){ if(c.tag===t) o.push(c); all(c,t,o); } return o; };
+  const W=[], WI={}, media=[];
+  all(ft,'Wheel').forEach(w=>{ const wi=W.length; let hasImg=false; const sl=kids(w,'Slot').map((s,k)=>{ const col=s.a.Color?fxpCie(s.a.Color):''; if(s.a.MediaFileName){ media.push([wi,k,s.a.MediaFileName]); hasImg=true; } return [s.a.Name||'',col&&col!=='ffffff'?col:'','',kids(s,'Facet').length]; });
+    const n=w.a.Name||('Wheel'+wi), k=/^colou?r/i.test(n)?'c':/^gobo/i.test(n)?'g':/^prism/i.test(n)?'p':/^anim/i.test(n)?'a':sl.some(s=>s[3])?'p':hasImg?'g':'c'; WI[n]=wi; W.push({n,k,s:sl}); });
+  const ph={}, bm=all(ft,'Beam')[0];
+  if(bm){ if(+bm.a.BeamAngle>0) ph.ba=+bm.a.BeamAngle; if(+bm.a.FieldAngle>0) ph.fa=+bm.a.FieldAngle; if(+bm.a.LuminousFlux>0) ph.lm=Math.round(+bm.a.LuminousFlux); if(+bm.a.ColorTemperature>0) ph.k=Math.round(+bm.a.ColorTemperature); if(bm.a.LampType) ph.lt=bm.a.LampType; }
+  const wheelOf=A=>{ const m=String(A||'').match(/^(Color|Gobo|Prism|AnimationWheel)(\d+)/); if(!m) return -1; const nm=m[1]==='AnimationWheel'?'Animation':m[1]; return WI[m[1]+m[2]]!=null?WI[m[1]+m[2]]:WI[nm+m[2]]!=null?WI[nm+m[2]]:WI[nm]!=null?WI[nm]:-1; };
+  const T=[], TI=new Map(), M={}; let zmin=1e9, zmax=-1e9;
+  for(const md of all(ft,'DMXMode')){
+    const raw=[];
+    for(const ch of all(md,'DMXChannel')){ const off=ch.a.Offset; if(!off||off==='None') continue; const offs=off.split(',').map(v=>parseInt(v,10)).filter(n=>n>0); if(!offs.length) continue;
+      const by=offs.length, MX=Math.pow(256,by)-1, lcs=kids(ch,'LogicalChannel'); if(!lcs.length) continue; const LA=lcs[0].a.Attribute||'';
+      const fl=[]; lcs.forEach(l=>kids(l,'ChannelFunction').forEach(f=>fl.push(f)));
+      raw.push({ch,offs,by,MX,LA,fl,name:ch.a.Name||((ch.a.Geometry||'')+'_'+LA)}); }
+    // ModeMaster bir kanal fonksiyonunu gösteriyorsa, o fonksiyonun DMX aralıklarını bul
+    const fnRanges=(chName,fnName)=>{ const r=raw.find(x=>x.name===chName); if(!r) return null; const out=[];
+      r.fl.forEach((f,i)=>{ if((f.a.Name||f.a.Attribute)!==fnName) return; const a=fxpDmx(f.a.DMXFrom,r.by); let b=r.MX; for(let j=i+1;j<r.fl.length;j++){ const n=fxpDmx(r.fl[j].a.DMXFrom,r.by); if(n>a&&!r.fl[j].a.ModeMaster){ b=n-1; break; } } out.push(a,b); }); return out.length?out:null; };
+    const chans=[];
+    for(const R of raw){ const {offs,by,MX,LA,fl}=R, fns=[];
+      fl.forEach((fn,i)=>{ const from=fxpDmx(fn.a.DMXFrom,by), mkey=(fn.a.ModeMaster||'')+'|'+(fn.a.ModeFrom||'')+'|'+(fn.a.ModeTo||'');
+        let to=MX; for(let j=i+1;j<fl.length;j++){ const g=fl[j], gk=(g.a.ModeMaster||'')+'|'+(g.a.ModeFrom||'')+'|'+(g.a.ModeTo||''), n=fxpDmx(g.a.DMXFrom,by); if(gk===mkey&&n>from){ to=n-1; break; } }
+        if(to<from) return;
+        const A=fn.a.Attribute||LA; let kd=fxpKind(A); const wn=fn.a.Wheel; let wi=wn!=null&&WI[wn]!=null?WI[wn]:-1; if(wi<0&&/^(S|SS|SR|WR|PS|GI|GR)$/.test(kd)) wi=wheelOf(A);
+        if(kd==='PS') kd=wi>=0?'S':'PR';
+        let pf=fn.a.PhysicalFrom!=null&&fn.a.PhysicalFrom!==''?+fn.a.PhysicalFrom:0, pt=fn.a.PhysicalTo!=null&&fn.a.PhysicalTo!==''?+fn.a.PhysicalTo:1; if(!isFinite(pf)) pf=0; if(!isFinite(pt)) pt=1;
+        const nm=Math.max(Math.abs(pf),Math.abs(pt)); if(FXP_NORM[kd]&&nm>1.0001){ pf/=nm; pt/=nm; }
+        if(kd==='Z'){ zmin=Math.min(zmin,pf,pt); zmax=Math.max(zmax,pf,pt); }
+        let mm=null; if(fn.a.ModeMaster){ const parts=fn.a.ModeMaster.split('.'); if(parts.length>=3){ const rg=fnRanges(parts[0],parts[parts.length-1]); if(rg) mm=[parts[0]].concat(rg); }
+          else { const r=raw.find(x=>x.name===parts[0]); if(r) mm=[parts[0],fxpDmx(fn.a.ModeFrom,r.by),fxpDmx(fn.a.ModeTo,r.by)]; } }
+        const lab0=fn.a.Name||A, sets=kids(fn,'ChannelSet'), mid=(a,b)=>to>from?(a-from)/(to-from):0, ip=(x)=>Math.round((pf+(pt-pf)*x)*1000)/1000;
+        const push=(a,b,lab,spf,spt,slot)=>{ let k=kd; if(k==='SH') k=/clos|off|blackout|black/i.test(lab)?'X':'O'; const e=[a,b,lab||lab0,k,spf,spt,wi,slot]; if(mm) e.push(mm); fns.push(e); };
+        if(sets.length){ const first=fxpDmx(sets[0].a.DMXFrom,by); if(first>from) push(from,first-1,lab0,ip(0),ip(mid(first-1)),0);
+          sets.forEach((s,j)=>{ const a=fxpDmx(s.a.DMXFrom,by); if(a<from||a>to) return; let b=j+1<sets.length?fxpDmx(sets[j+1].a.DMXFrom,by)-1:to; b=Math.min(b,to); if(b<a) return;
+            let spf=ip(mid(a)), spt=ip(mid(b)); if(FXP_PHYS[kd]&&s.a.PhysicalFrom!=null&&s.a.PhysicalFrom!==''&&!/^(S|SS)$/.test(kd)){ spf=+s.a.PhysicalFrom; spt=s.a.PhysicalTo!=null?+s.a.PhysicalTo:spf; if(FXP_NORM[kd]&&nm>1.0001){ spf/=nm; spt/=nm; } }
+            push(a,b,s.a.Name||lab0,spf,spt,+s.a.WheelSlotIndex||0); }); }
+        else push(from,to,lab0,ip(0),ip(1),0); });
+      if(!fns.length) continue; if(fns.length>200) fns.length=200;
+      const df=R.ch.a.Default!=null?R.ch.a.Default:(fl[0]&&fl[0].a.Default); chans.push([offs,LA,fxpGroup(LA),fxpDmx(df||'0/1',by),fxpTable(T,TI,fns),R.name]); }
+    if(chans.length) M[md.a.Name||('Mod '+(Object.keys(M).length+1))]=chans; }
+  if(zmin<=zmax) ph.z=[Math.round(zmin*10)/10,Math.round(zmax*10)/10];
+  return {p:{v:1,ph,w:W,t:T,m:M},media};
+}
+// ---- OFL ----
+function fxpNum(s,re){ const m=String(s==null?'':s).match(re); return m?+m[1]:null; }
+function fxpOflSpeed(s){ if(s==null) return null; s=String(s); const hz=fxpNum(s,/(-?[\d.]+)\s*Hz/i); if(hz!=null) return hz; const rpm=fxpNum(s,/(-?[\d.]+)\s*rpm/i); if(rpm!=null) return rpm*(/CCW/.test(s)?-1:1);
+  const pc=fxpNum(s,/(-?[\d.]+)\s*%/); const base=pc!=null?pc/100:/stop/i.test(s)?0:/slow/i.test(s)?.1:/fast/i.test(s)?1:null; if(base==null) return null; return base*(/CCW/.test(s)?-1:1); }
+function fxpFromOFL(j){
+  const av=j.availableChannels||{}, lens=(j.physical&&j.physical.lens&&j.physical.lens.degreesMinMax)||null, bulb=(j.physical&&j.physical.bulb)||{};
+  const W=[], WI={}, refs=[], cnt={c:0,g:0,p:0,a:0}, WA={};
+  for(const [wn,wh] of Object.entries(j.wheels||{})){ const sl=(wh&&wh.slots)||[], types=sl.map(s=>s&&s.type);
+    const k=/colou?r/i.test(wn)?'c':/gobo/i.test(wn)?'g':/prism/i.test(wn)?'p':/anim/i.test(wn)?'a':types.includes('Gobo')?'g':types.includes('Prism')?'p':types.includes('AnimationGoboStart')?'a':'c';
+    const wi=W.length; cnt[k]++; WA[wn]=({c:'Color',g:'Gobo',p:'Prism',a:'AnimationWheel'})[k]+cnt[k];
+    W.push({n:wn,k,s:sl.map((s,ix)=>{ s=s||{}; const res=typeof s.resource==='string'?s.resource:(s.resource&&s.resource.key)||''; if(res) refs.push([wi,ix,res]);
+      const nm=s.name||(s.type==='Open'?'Open':s.type==='Closed'?'Closed':s.type==='Color'?'':((s.type||'Slot')+' '+(ix+1))); return [nm,Array.isArray(s.colors)&&s.colors[0]?String(s.colors[0]).replace('#','').toLowerCase().slice(0,6):'','',s.type==='Prism'?(s.facets||3):0]; })}); WI[wn]=wi; }
+  const fineOf={}; for(const [n,c] of Object.entries(av)) (c&&c.fineChannelAliases||[]).forEach((a,i)=>{ fineOf[a]={n,i}; });
+  const ang=(s,def)=>{ if(s==null) return def; if(/wide/i.test(s)) return lens?lens[1]:40; if(/narrow/i.test(s)) return lens?lens[0]:10; const d=fxpNum(s,/(-?[\d.]+)\s*deg/); if(d!=null) return d; const p=fxpNum(s,/(-?[\d.]+)\s*%/); if(p!=null&&lens) return lens[0]+(lens[1]-lens[0])*p/100; return def; };
+  const pct=(s,map,def)=>{ if(s==null) return def; for(const [re,v] of map) if(re.test(s)) return v; const p=fxpNum(s,/(-?[\d.]+)\s*%/); return p!=null?p/100:def; };
+  const kel=s=>{ if(s==null) return null; const k=fxpNum(s,/([\d.]+)\s*K/); if(k!=null) return k; return /warm|CTO/i.test(s)?3200:/cold|CTB/i.test(s)?8000:/default/i.test(s)?(bulb.colorTemperature||6500):null; };
+  const T=[], TI=new Map(), M={};
+  const capOf=c=>c?(c.capability?[Object.assign({dmxRange:[0,255]},c.capability)]:(c.capabilities||[])):[];
+  const attrOf=(nm,caps)=>{ const c=caps.find(x=>x&&x.type&&x.type!=='NoFunction')||caps[0]||{}, t=c.type, wn=c.wheel||nm, wa=WA[wn]||WA[Object.keys(WA).find(k=>k===nm)||'']||null;
+    switch(t){ case 'Intensity': return 'Dimmer'; case 'Pan': return 'Pan'; case 'Tilt': return 'Tilt';
+      case 'ColorIntensity': return ({Red:'ColorAdd_R',Green:'ColorAdd_G',Blue:'ColorAdd_B',White:'ColorAdd_W','Warm White':'ColorAdd_WW','Cold White':'ColorAdd_CW',Amber:'ColorAdd_RY',UV:'ColorAdd_UV',Lime:'ColorAdd_GY',Cyan:'ColorSub_C',Magenta:'ColorSub_M',Yellow:'ColorSub_Y',Indigo:'ColorAdd_B'})[c.color]||nm;
+      case 'ColorPreset': return 'ColorMacro1'; case 'ColorTemperature': return 'CTO'; case 'Zoom': case 'BeamAngle': return 'Zoom'; case 'Focus': return 'Focus1'; case 'Iris': return 'Iris'; case 'Frost': return 'Frost1';
+      case 'Prism': return 'Prism1'; case 'PrismRotation': return 'Prism1PosRotate'; case 'ShutterStrobe': return 'Shutter1'; case 'StrobeSpeed': return 'Shutter1Strobe';
+      case 'WheelSlot': case 'WheelShake': return wa||nm; case 'WheelSlotRotation': return wa?wa+'PosRotate':nm; case 'WheelRotation': return wa?wa+'WheelSpin':nm;
+      case 'PanTiltSpeed': case 'Speed': return 'PositionMSpeed'; case 'Maintenance': return 'Control1'; case 'Effect': return 'Effects1'; default: return nm; } };
+  // Anahtarlı kanallar (switchChannels): bir kanalın değeri başka kanalın anlamını değiştirir
+  const SW={}; for(const [cn,ch] of Object.entries(av)) for(const c of capOf(ch)) if(c&&c.switchChannels) for(const [sn,tn] of Object.entries(c.switchChannels)){ const o=(SW[sn]=SW[sn]||{}); (o[tn]=o[tn]||{m:cn,r:[]}).r.push(c.dmxRange[0],c.dmxRange[1]); }
+  const buildFns=(ch,nm,by,mm,fns)=>{ const res=({'8bit':1,'16bit':2,'24bit':3})[ch.dmxValueResolution]||1, sc=v=>by>=res?v*Math.pow(256,by-res):Math.floor(v/Math.pow(256,res-by)), sce=v=>by>=res?(v+1)*Math.pow(256,by-res)-1:Math.floor(v/Math.pow(256,res-by)), caps=capOf(ch);
+      for(const c of caps){ if(!c||!Array.isArray(c.dmxRange)) continue; const a=sc(c.dmxRange[0]), b=sce(c.dmxRange[1]), t=c.type, wi=c.wheel!=null&&WI[c.wheel]!=null?WI[c.wheel]:(WI[nm]!=null?WI[nm]:-1);
+        let k='N', p1=0, p2=1, slot=0, lab='';
+        const se=(x,y,f)=>{ const v1=f(c[x+'Start']!=null?c[x+'Start']:c[x]), v2=f(c[x+'End']!=null?c[x+'End']:c[x]); return [v1,v2!=null?v2:v1]; };
+        switch(t){
+          case 'Intensity': k='D'; [p1,p2]=se('brightness',0,s=>pct(s,[[/^off$/i,0],[/dark/i,.01],[/bright/i,1]],null)); if(p1==null){p1=0;p2=1;} lab='Dimmer'; break;
+          case 'Pan': case 'Tilt': k=t==='Pan'?'P':'T'; [p1,p2]=se('angle',0,s=>fxpNum(s,/(-?[\d.]+)\s*deg/)); if(p1==null){ p1=0; p2=t==='Pan'?540:270; } lab=t; break;
+          case 'ColorIntensity': k=({Red:'R',Green:'G',Blue:'B',White:'W','Warm White':'W','Cold White':'W',Amber:'A',UV:'UV',Lime:'L',Cyan:'C',Magenta:'M',Yellow:'Y',Indigo:'B'})[c.color]||'N'; [p1,p2]=se('brightness',0,s=>pct(s,[[/^off$/i,0],[/dark/i,.01],[/bright/i,1]],null)); if(p1==null){p1=0;p2=1;} lab=c.color||nm; break;
+          case 'ColorPreset': k='CP'; p1=Array.isArray(c.colors)&&c.colors[0]?String(c.colors[0]).replace('#','').toLowerCase().slice(0,6):''; p2=0; lab=c.comment||c.colorsStart&&'Renk geçişi'||'Renk'; break;
+          case 'ColorTemperature': k='CT'; [p1,p2]=se('colorTemperature',0,kel); if(p1==null){p1=bulb.colorTemperature||6500;p2=3200;} lab='CTO '+Math.round(p1)+(p2!==p1?'…'+Math.round(p2):'')+' K'; break;
+          case 'WheelSlot': case 'WheelShake': { k=t==='WheelSlot'?'S':'SS'; const sn=c.slotNumberStart!=null?c.slotNumberStart:c.slotNumber; slot=sn!=null?Math.floor(sn):0; p1=sn||0; p2=c.slotNumberEnd!=null?c.slotNumberEnd:p1;
+            const W0=W[wi], S0=W0&&W0.s[slot-1]; lab=(S0&&S0[0])||(W0?W0.n+' '+slot:'Yuva '+slot); if(sn!=null&&sn%1) lab+=' (yarım)'; if(t==='WheelShake') lab+=' sallama'; if(W0&&W0.k==='p'&&S0&&slot>1) k=k; break; }
+          case 'WheelSlotRotation': case 'WheelRotation': if(c.angleStart!=null||c.angle!=null){ k='GI'; [p1,p2]=se('angle',0,s=>fxpNum(s,/(-?[\d.]+)\s*deg/)); if(p1==null){p1=0;p2=360;} lab='İndeks'; } else { k=t==='WheelRotation'?'WR':'GR'; [p1,p2]=se('speed',0,fxpOflSpeed); if(p1==null){p1=0;p2=0;} lab=t==='WheelRotation'?'Teker dönüşü':'Dönüş'; } break;
+          case 'Zoom': case 'BeamAngle': k='Z'; [p1,p2]=se('angle',0,s=>ang(s,null)); if(p1==null){ p1=lens?lens[1]:40; p2=lens?lens[0]:10; } lab='Zoom'; break;
+          case 'Focus': k='F'; [p1,p2]=se('distance',0,s=>pct(s,[[/near/i,0],[/far/i,1]],null)); if(p1==null){p1=0;p2=1;} lab='Fokus'; break;
+          case 'Iris': k='I'; [p1,p2]=se('openPercent',0,s=>pct(s,[[/open/i,1],[/closed/i,0]],null)); if(p1==null){p1=1;p2=0;} lab='İris'; break;
+          case 'Frost': k='FR'; [p1,p2]=se('frostIntensity',0,s=>pct(s,[[/off/i,0],[/low/i,.25],[/high/i,1]],null)); if(p1==null){p1=0;p2=1;} lab='Frost'; break;
+          case 'Prism': { k='PR'; const fm=String(c.comment||'').match(/(\d+)\s*-?\s*facet/i); p1=fm?+fm[1]:3; const sp=fxpOflSpeed(c.speedStart!=null?c.speedStart:c.speed); p2=sp||0; lab=(c.comment||'Prizma'); break; }
+          case 'PrismRotation': k=c.angleStart!=null||c.angle!=null?'PI':'PRR'; [p1,p2]=k==='PI'?se('angle',0,s=>fxpNum(s,/(-?[\d.]+)\s*deg/)):se('speed',0,fxpOflSpeed); if(p1==null){p1=0;p2=0;} lab='Prizma dönüşü'; break;
+          case 'ShutterStrobe': { const ef=c.shutterEffect||''; if(ef==='Open'){ k='O'; lab='Açık'; } else if(ef==='Closed'){ k='X'; lab='Kapalı'; } else { k='ST'; [p1,p2]=se('speed',0,fxpOflSpeed); if(p1==null){p1=1;p2=20;} if(p1<=1&&p2<=1&&!/Hz/i.test(String(c.speedStart||c.speed||''))){ p1=1+p1*19; p2=1+p2*19; } lab=({Strobe:'Strobe',Pulse:'Pulse',RampUp:'Rampa yukarı',RampDown:'Rampa aşağı',RampUpDown:'Rampa',Lightning:'Şimşek',Spikes:'Spikes',Burst:'Patlama'})[ef]||ef||'Strobe'; if(c.randomTiming) lab+=' rastgele'; } break; }
+          case 'StrobeSpeed': k='ST'; [p1,p2]=se('speed',0,fxpOflSpeed); if(p1==null){p1=1;p2=20;} lab='Strobe hızı'; break;
+          case 'NoFunction': k='N'; lab='—'; break;
+          case 'Maintenance': k='CTL'; lab=c.comment||'Bakım'; break;
+          case 'Speed': case 'PanTiltSpeed': case 'EffectSpeed': case 'Time': k='SP'; lab=c.comment||(t==='PanTiltSpeed'?'Pan/Tilt hızı':'Hız'); break;
+          default: k=/Effect|Fog|Sound|Rotation|Blade/.test(t||'')?'FX':'N'; lab=c.effectName||c.comment||t||nm;
+        }
+        if(c.comment&&(k==='N'||k==='CTL')) lab=c.comment; else if(c.comment&&!/^(CP|ST|O|X|PR)$/.test(k)&&lab&&!lab.includes(c.comment)) lab+=' – '+c.comment;
+        if(typeof p1==='number') p1=Math.round(p1*1000)/1000; if(typeof p2==='number') p2=Math.round(p2*1000)/1000;
+        const e=[a,b,lab,k,p1,p2,wi,slot]; if(mm) e.push(mm); fns.push(e); }
+    return sc; };
+  for(const mode of (j.modes||[])){ const list=mode.channels||[], chans=[], used=new Set();
+    const bytesOf=n=>1+((av[n]&&av[n].fineChannelAliases)||[]).filter(fa=>list.includes(fa)).length;
+    list.forEach((nm,ix)=>{ if(typeof nm!=='string'||fineOf[nm]) return; let ch=av[nm]; const offs=[ix+1], fns=[]; let A, dv=0;
+      if(ch){ (ch.fineChannelAliases||[]).forEach(fa=>{ const k=list.indexOf(fa); if(k>=0) offs.push(k+1); }); A=attrOf(nm,capOf(ch)); const sc=buildFns(ch,nm,offs.length,null,fns);
+        dv=ch.defaultValue!=null?(typeof ch.defaultValue==='number'?sc(ch.defaultValue):Math.round((parseFloat(ch.defaultValue)||0)/100*(Math.pow(256,offs.length)-1))):null; }
+      else if(SW[nm]){ const tg=Object.entries(SW[nm]); if(tg.some(([tn])=>fineOf[tn])) return;
+        const fineT=new Set(tg.flatMap(([tn])=>(av[tn]&&av[tn].fineChannelAliases)||[])); list.forEach((x,k)=>{ if(typeof x==='string'&&SW[x]&&Object.keys(SW[x]).some(t=>fineT.has(t))) offs.push(k+1); });
+        for(const [tn,inf] of tg){ const tch=av[tn]; if(!tch) continue; if(!A) A=attrOf(tn,capOf(tch)); const mb=bytesOf(inf.m), mr=[]; for(let q=0;q<inf.r.length;q+=2) mr.push(inf.r[q]*Math.pow(256,mb-1),(inf.r[q+1]+1)*Math.pow(256,mb-1)-1);
+          buildFns(tch,tn,offs.length,[inf.m].concat(mr),fns); } }
+      else return;
+      if(used.has(A)) A=A+'_'+nm; used.add(A);
+      if(!fns.length) return;
+      // Pan/Tilt: ortası 0° olsun (−270…+270 gibi)
+      const pk=fns.filter(e=>e[3]==='P'||e[3]==='T'); if(pk.length){ const lo=Math.min(...pk.map(e=>Math.min(e[4],e[5]))), hi=Math.max(...pk.map(e=>Math.max(e[4],e[5]))), m=(lo+hi)/2; pk.forEach(e=>{ e[4]-=m; e[5]-=m; }); }
+      if(dv==null) dv=fns.find(e=>e[3]==='O')?fns.find(e=>e[3]==='O')[0]:0;
+      chans.push([offs,A,fxpGroup(A),dv,fxpTable(T,TI,fns),nm]); });
+    if(chans.length) M[String(mode.name||mode.shortName||'Mod')]=chans; }
+  const ph={}; if(lens){ ph.z=[lens[0],lens[1]]; ph.ba=Math.round((lens[0]+lens[1])/2*10)/10; } if(bulb.lumens) ph.lm=bulb.lumens; if(bulb.colorTemperature) ph.k=bulb.colorTemperature; if(bulb.type) ph.lt=bulb.type;
+  return {p:{v:1,ph,w:W,t:T,m:M},refs};
+}
+// ---------- Orijinal özellikler: profili yükle, değerlendir, yaz ----------
+const FXP={c:new Map(),pend:new Set(),sh:{},img:{},ims:{}};
+function fxpHash(s){ let h=0x811c9dc5; s=String(s); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h>>>0; }
+async function fxpInflate(b64){ const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)); if(!window.DecompressionStream) throw new Error('açılamadı'); const s=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip')); return JSON.parse(await new Response(s).text()); }
+window.FXP_SHARD=function(id,b64){ const r=FXP.sh[id]; if(!r) return; fxpInflate(b64).then(r.res,r.rej); };
+function fxpShard(id){ if(FXP.sh[id]) return FXP.sh[id].p; const o={}; o.p=new Promise((a,b)=>{ o.res=a; o.rej=b; }); FXP.sh[id]=o; const s=document.createElement('script'); s.src='vendor/fx/'+id+'.js'; s.onerror=()=>o.rej(new Error('yok')); document.head.appendChild(s); return o.p; }
+function fxpTree(el){ const n={tag:el.tagName,a:{},c:[]}; for(const at of el.attributes) n.a[at.name]=at.value; for(const ch of el.children) n.c.push(fxpTree(ch)); return n; }
+async function fxpSmall(b64,type){ // gobo resmini 128 px'e küçült (depoda yer kaplamasın)
+  return new Promise(res=>{ const I=new Image(); I.onload=()=>{ try{ const S=128, c=document.createElement('canvas'); c.width=c.height=S; const x=c.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,S,S); x.drawImage(I,0,0,S,S); res(c.toDataURL('image/png')); }catch(_){ res(I.src); } }; I.onerror=()=>res(null); I.src=`data:${type};base64,${b64}`; }); }
+async function fxpFromZip(zip){
+  const xf=zip.file('description.xml'); if(!xf) return null; const doc=new DOMParser().parseFromString(await xf.async('string'),'application/xml'), root=fxpTree(doc.documentElement);
+  const find=n=>n.tag==='FixtureType'?n:n.c.reduce((a,c)=>a||find(c),null), ft=find(root); if(!ft) return null;
+  const {p,media}=fxpFromGDTF(ft);
+  for(const [wi,k,mf] of media){ const zf=zip.file(`wheels/${mf}.png`)||zip.file(`wheels/${mf}`)||zip.file(`wheels/${mf}.svg`)||zip.file(`wheels/${mf}.jpg`); if(!zf) continue;
+    try{ const b64=await zf.async('base64'), type=/\.svg$/i.test(zf.name)?'image/svg+xml':/\.jpe?g$/i.test(zf.name)?'image/jpeg':'image/png', im=await fxpSmall(b64,type); if(im&&p.w[wi]&&p.w[wi].s[k]) p.w[wi].s[k][2]=im; }catch(_){} }
+  return p; }
+// Aynı cihazın gömülü GDTF/OFL profili (yerleşik, MA2 ya da elle eklenen kayıtlar için ada göre eşleşir)
+let FXA=null; const FXAM=new Map();
+function fxpAlias(e){ if(FXAM.has(e.id)) return FXAM.get(e.id); const d=gdtfBuiltin(), o=oflBuiltin(); if(!d.length&&!o.length) return null;
+  const nk=(a,b)=>(String(a||'')+' '+String(b||'')).toLowerCase().replace(/ı/g,'i').normalize('NFD').replace(/[^a-z0-9]/g,'');
+  if(!FXA){ FXA=new Map(); for(const x of o) if(x.fp) FXA.set(nk(x.brand,x.model),x.fp); for(const x of d) if(x.fp) FXA.set(nk(x.brand,x.model),x.fp); }
+  const k=nk(e.brand,e.model); let r=FXA.get(k)||null;
+  if(!r){ const b=nk(e.brand,'').slice(0,4), m=nk('',e.model); if(b&&m.length>=4) for(const [kk,fp] of FXA) if(kk.startsWith(b)&&kk.endsWith(m)){ r=fp; break; } }
+  FXAM.set(e.id,r); return r; }
+function fxpKey(e){ if(!e) return null; if(e.fp) return e.fp; if(e.src==='gdtf') return 'u:'+libKey(e.brand,e.model); return fxpAlias(e)||(e.src==='gdtfb'?'u:'+libKey(e.brand,e.model):null); }
+async function fxpFetch(k){ const t=k[0], id=k.slice(2);
+  if(t==='g'||t==='o'){ const d=await fxpShard(t+(fxpHash(id)%(t==='g'?64:8))); return d[id]||null; }
+  if(t==='u'){ let p=null; try{ p=await IDB.get('fxp:'+id); }catch(_){} if(p) return p; let buf=null; try{ buf=await IDB.get('gdtf:'+id); }catch(_){}
+    if(buf&&window.JSZip){ p=await fxpFromZip(await JSZip.loadAsync(buf)); if(p) IDB.set('fxp:'+id,p).catch(()=>{}); return p; } }
+  return null; }
+function fxpGet(e){ const k=fxpKey(e); if(!k) return null; if(FXP.c.has(k)) return FXP.c.get(k);
+  if(!FXP.pend.has(k)){ FXP.pend.add(k); fxpFetch(k).then(p=>{ FXP.c.set(k,p||null); if(p){ LIVE.cache.clear(); if(LIVE.on){ writeProg(); liveSoon(); } if(LIVE.panel) renderLive(); } }).catch(()=>FXP.c.set(k,null)); }
+  return null; }
+const fxpCount=ch=>Math.max(0,...ch.map(c=>Math.max(...c[0])));
+function fxpOf(f){ if(!f||!f.lib) return null; const e=libById(f.lib), P=e?fxpGet(e):null; if(!P||!P.m) return null; const ms=Object.keys(P.m), fm=String(f.mode||'');
+  let mk=ms.find(x=>x===fm)||ms.find(x=>x.toLowerCase()===fm.toLowerCase()); if(!mk){ const n=+f.chn||0; mk=(n&&ms.find(x=>fxpCount(P.m[x])===n))||(ms.length===1||f.ctl!=='dmx'||!(+f.addr>0)?ms[0]:null); }
+  return mk?{P,ch:P.m[mk],e}:null; }
+function fxpImg(ref){ if(!ref) return null; if(ref.startsWith('data:')) return ref; if(ref.startsWith('h:')){ const h=ref.slice(2); if(FXP.img[h]) return FXP.img[h];
+    const id='i'+(parseInt(h.slice(0,4),16)%64); if(!FXP.ims[id]){ FXP.ims[id]=1; fxpShard(id).then(d=>{ Object.assign(FXP.img,d); for(const kk in GTX) delete GTX[kk]; try{ paneSoon(); }catch(_){} if(LIVE.panel) renderLive(); }).catch(()=>{}); } }
+  return null; }
+// Bir kanalın o anki fonksiyonu (ModeMaster/anahtar kanallar dahil)
+function fxpFns(P,chans,raws){ const memo=new Array(chans.length), idx={}; chans.forEach((c,i)=>{ idx[c[5]]=i; });
+  const fn=i=>{ if(memo[i]!==undefined) return memo[i]; memo[i]=null; const v=raws[i], T=P.t[chans[i][4]]||[]; let free=null;
+    for(const e of T){ if(v<e[0]||v>e[1]) continue; const mm=e[8]; if(!mm||idx[mm[0]]==null){ if(!free) free=e; continue; } const mv=raws[idx[mm[0]]]; fn(idx[mm[0]]);
+      for(let q=1;q<mm.length;q+=2) if(mv>=mm[q]&&mv<=mm[q+1]) return memo[i]=e; }
+    return memo[i]=free; };
+  return chans.map((c,i)=>fn(i)); }
+const fxpMX=c=>Math.pow(256,c[0].length)-1;
+// Fiziksel değere göre DMX değeri bul (örn. 24° zoom, %40 iris)
+function fxpFind(T,kinds,val,pick){ let best=null, bd=1e18;
+  for(const e of T){ if(!kinds.includes(e[3])||(pick&&!pick(e))) continue; if(typeof e[4]!=='number'||val==null){ const d=0; if(d<bd){ bd=d; best=Math.round((e[0]+e[1])/2); } continue; }
+    const lo=Math.min(e[4],e[5]), hi=Math.max(e[4],e[5]);
+    if(val>=lo&&val<=hi){ const t=e[5]===e[4]?0:(val-e[4])/(e[5]-e[4]); return Math.round(e[0]+(e[1]-e[0])*t); }
+    const d=Math.min(Math.abs(val-lo),Math.abs(val-hi)); if(d<bd){ bd=d; best=Math.abs(val-e[4])<Math.abs(val-e[5])?e[0]:e[1]; } }
+  return best; }
+// Programcı değerlerinden kanal ham değerleri: varsayılan → genel kontroller → kanal bazlı (orijinal) değerler
+function fxpCompute(f,p,X){ const {P,ch}=X, T=c=>P.t[c[4]]||[], hasD=ch.some(c=>T(c).some(e=>e[3]==='D')), hasW=ch.some(c=>T(c).some(e=>e[3]==='W'));
+  const [r,g,b]=hexRgb(p.col), wh=Math.min(r,g,b)>.97, m=hasD?1:p.I, gw=P.w.findIndex(w=>w.k==='g'), out=[];
+  for(const c of ch){ const tb=T(c), ks=new Set(tb.map(e=>e[3])), A=c[1]; let v=c[3];
+    const raw=p.raw&&p.raw[A]; if(raw!=null){ out.push(Math.max(0,Math.min(fxpMX(c),raw))); continue; }
+    const f1=(k,val,pk)=>{ const q=fxpFind(tb,[k],val,pk); if(q!=null) v=q; };
+    if(ks.has('D')) f1('D',p.I);
+    else if(ks.has('P')) f1('P',p.pan||0); else if(ks.has('T')) f1('T',p.tilt||0);
+    else if(ks.has('R')) f1('R',(wh&&hasW?0:r)*m); else if(ks.has('G')) f1('G',(wh&&hasW?0:g)*m); else if(ks.has('B')) f1('B',(wh&&hasW?0:b)*m);
+    else if(ks.has('W')) f1('W',(wh?1:0)*m); else if(ks.has('A')||ks.has('UV')||ks.has('L')) v=0;
+    else if(/^ColorSub_C/.test(A)) f1('C',1-r); else if(/^ColorSub_M/.test(A)) f1('M',1-g); else if(/^ColorSub_Y/.test(A)) f1('Y',1-b);
+    else if(ks.has('Z')&&p.zoom!=null&&P.ph.z){ const z=P.ph.z; f1('Z',z[0]+(z[1]-z[0])*p.zoom); }
+    else if(ks.has('I')&&p.iris) f1('I',1-p.iris);
+    else if(ks.has('F')&&p.focus!=null&&/^Focus\d*$/.test(A)) f1('F',p.focus);
+    else if(ks.has('FR')&&p.frost) f1('FR',p.frost);
+    else if(ks.has('ST')||ks.has('O')){ if(p.strobe>0){ const e=tb.find(e=>e[3]==='ST'); if(e) v=Math.round(e[0]+(e[1]-e[0])*Math.min(1,p.strobe)); } else { const cur=tb.find(e=>v>=e[0]&&v<=e[1]); if(!cur||cur[3]!=='O'){ const o=tb.find(e=>e[3]==='O'); if(o) v=o[0]; } } }
+    else if(gw>=0&&p.gobo&&tb.some(e=>e[3]==='S'&&e[6]===gw)){ const e=tb.find(e=>e[3]==='S'&&e[6]===gw&&e[7]===p.gobo&&!e[8])||tb.find(e=>e[3]==='S'&&e[6]===gw&&e[7]===p.gobo); if(e) v=Math.round((e[0]+e[1])/2); }
+    else if(p.prism&&(ks.has('PR')||tb.some(e=>e[6]>=0&&P.w[e[6]]&&P.w[e[6]].k==='p'&&e[7]>1))){ const e=tb.find(e=>e[3]==='PR')||tb.find(e=>e[6]>=0&&P.w[e[6]].k==='p'&&e[7]>1); if(e) v=Math.round((e[0]+e[1])/2); }
+    out.push(v); }
+  return out; }
+function fxpKelvin(K){ K=Math.max(1000,Math.min(40000,K))/100; let r,g,b; if(K<=66){ r=255; g=99.47*Math.log(K)-161.12; b=K<=19?0:138.52*Math.log(K-10)-305.04; } else { r=329.7*Math.pow(K-60,-.1332); g=288.12*Math.pow(K-60,-.0755); b=255; } return [r,g,b].map(x=>Math.max(0,Math.min(255,x))/255); }
+// Ham değerlerden görüntü: renk, yoğunluk, gobo(lar), zoom (°), iris, prizma (faset), strobe (Hz)
+function fxpLive(X,raws,r){ const {P,ch}=X, F=fxpFns(P,ch,raws); let I=null, mix=null, sub=null, mul=null, cct=null, hu=null, sa=null, closed=false, now=performance.now()/1000;
+  const mulC=hex=>{ const w=hexRgb('#'+hex); mul=mul?mul.map((z,i)=>z*w[i]):w; };
+  r.gobos=[]; r.prismN=0; let gang=null, spin=0;
+  ch.forEach((c,i)=>{ const e=F[i]; if(!e) return; const [a,b,lab,k,p1,p2,wi,sl]=e, t=b>a?(raws[i]-a)/(b-a):0, val=typeof p1==='number'?p1+(p2-p1)*t:p1;
+    if(wi>=0&&sl>0&&P.w[wi]){ const W=P.w[wi], S=W.s[sl-1]; if(S){ if(W.k==='c'){ if(S[1]) mulC(S[1]); } else if(W.k==='g'||W.k==='a'){ if(sl>1||S[2]) r.gobos.push({w:wi,s:sl,img:S[2],nm:S[0]}); } else if(W.k==='p'){ if(sl>1||S[3]) r.prismN=Math.max(r.prismN,S[3]||3); } } }
+    switch(k){
+      case 'D': I=(I==null?1:I)*Math.max(0,Math.min(1,val)); break; case 'P': r.pan=val; break; case 'T': r.tilt=val; break;
+      case 'R': case 'G': case 'B': case 'W': case 'A': case 'UV': case 'L': (mix=mix||{})[k]=(mix[k]||0)+val; break;
+      case 'C': case 'M': case 'Y': (sub=sub||{})[k]=val; break; case 'CT': cct=val; break; case 'HU': hu=val; break; case 'SA': sa=val; break; case 'CP': if(p1) mulC(p1); break;
+      case 'Z': r.beamDeg=val; break; case 'F': r.focus=Math.max(0,Math.min(1,val)); break; case 'I': r.iris=Math.max(0,Math.min(1,1-val)); break; case 'FR': r.frost=Math.max(r.frost||0,Math.max(0,Math.min(1,val))); break;
+      case 'PR': r.prismN=Math.max(r.prismN,p1||3); break; case 'PRR': r.prismRot=val; break;
+      case 'GI': if(r.gobos.length||wi>=0) gang=(val||0)*Math.PI/180; break; case 'GR': spin=Math.abs(val)<=1.0001?val*360:val*12; break;
+      case 'X': closed=true; break; case 'ST': r.strobeHz=Math.max(.2,val||1); break; } });
+  const g=k=>mix&&mix[k]||0;
+  if(mix){ const R=g('R')+g('W')+g('A')+.7*g('L')+.4*g('UV'), G=g('G')+g('W')+.75*g('A')+g('L'), B=g('B')+g('W')+g('UV'), mx=Math.max(R,G,B); if(I==null) I=Math.min(1,mx); r.rgb=mx>0?[R/mx,G/mx,B/mx]:null; }
+  else if(sub) r.rgb=[1-(sub.C||0),1-(sub.M||0),1-(sub.Y||0)];
+  if(hu!=null&&!r.rgb){ const h=hu*6, c=sa==null?1:sa, x=c*(1-Math.abs(h%2-1)), q=[[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][Math.min(5,Math.max(0,Math.floor(h)))]; r.rgb=q.map(z=>z+(1-c)); }
+  if(cct!=null){ const nat=P.ph.k||6500, K=cct>100?cct:nat+(3200-nat)*Math.max(0,Math.min(1,cct)); if(Math.abs(K-nat)>50){ const a=fxpKelvin(K), b=fxpKelvin(nat), w=a.map((z,i)=>z/(b[i]||1)), mx=Math.max(...w)||1; mul=(mul||[1,1,1]).map((z,i)=>z*w[i]/mx); } }
+  if(mul){ let c=r.rgb?r.rgb.map((z,i)=>z*mul[i]):mul; const mx=Math.max(...c); r.rgb=mx>0?c.map(z=>z/mx):[0,0,0]; if(!(mx>0)) I=0; }
+  if(r.rgb){ const mx=Math.max(...r.rgb); if(mx>.985&&Math.min(...r.rgb)>.985) r.rgb=null; }
+  if(I==null) I=1; if(closed&&!r.strobeHz) I=0; r.I=Math.max(0,Math.min(1,I));
+  if(r.strobeHz) r.strobe=Math.max(.02,Math.min(1,(r.strobeHz-1)/14));
+  if(r.gobos.length){ r.gobo=r.gobos[0].s; r.gimgs=r.gobos.map(q=>q.img).filter(Boolean); r.gobos.forEach(q=>{ if(!q.img) r.gobo=q.s; }); } else r.gobo=0;
+  if(spin) LIVE.sAt=performance.now(); r.gangle=(gang||0)+spin*Math.PI/180*now; r.grot=0;
+  r.prism=r.prismN>0; if(r.prismRot) LIVE.sAt=performance.now();
+  return r; }
+// Programcı arayüzü: kanalın adı ve o anki değerin okunuşu
+function fxpAttrName(A){ A=String(A); const m=A.match(/^(Color|Gobo|Prism|AnimationWheel|Frost|Focus|Shutter)(\d+)(.*)$/);
+  const tr={Color:'Renk tekeri',Gobo:'Gobo',Prism:'Prizma',AnimationWheel:'Animasyon',Frost:'Frost',Focus:'Fokus',Shutter:'Shutter'}, sx={'':'',Pos:' indeks',PosRotate:' dönüş',WheelSpin:' teker dönüşü',WheelIndex:'',Strobe:' strobe',Adjust:' ayar',SelectEffects:' efekt'};
+  if(m) return tr[m[1]]+(['Prism','Frost','Focus','Shutter'].includes(m[1])&&m[2]==='1'?'':' '+m[2])+(sx[m[3]]!=null?sx[m[3]]:' '+m[3]);
+  return ({Dimmer:'Dimmer',Pan:'Pan',Tilt:'Tilt',Zoom:'Zoom',Iris:'İris',CTO:'CTO',CTB:'CTB',CTC:'CTC',ColorSub_C:'Cyan',ColorSub_M:'Magenta',ColorSub_Y:'Sarı',ColorAdd_R:'Kırmızı',ColorAdd_G:'Yeşil',ColorAdd_B:'Mavi',ColorAdd_W:'Beyaz',ColorAdd_WW:'Sıcak beyaz',ColorAdd_CW:'Soğuk beyaz',ColorAdd_RY:'Amber',ColorAdd_UV:'UV',ColorAdd_GY:'Lime',ColorMacro1:'Renk makrosu',PositionMSpeed:'Pan/Tilt hızı',Control1:'Kontrol',Effects1:'Efekt'})[A]||A.replace(/^(\w+?)M?Speed$|^(\w+?)Rate$/,(m,a,b)=>fxpAttrName(a||b)+' hızı').replace(/_/g,' '); }
+function fxpLab(e,S){ let tx=e[2]; if(S&&S[0]&&!tx.includes(S[0])){ const pr=tx.split(/\s+-\s+/), first=pr[0], rest=pr.slice(1).join(' - '), f0=first.toLowerCase().replace(/\/.*$/,'').trim();
+    tx=/^\s*(gobo|colou?r|renk|slot|yuva|g|c)?\s*\d+\s*$/i.test(first)||(f0&&S[0].toLowerCase().includes(f0))?S[0]+(rest?' · '+rest:''):tx+' · '+S[0]; } return tx; }
+function fxpTxtX(X,e,raw){ if(e&&e[6]>=0&&e[7]>0&&/^(S|SS|SR|PRR|PS)$/.test(e[3])){ const W=X.P.w[e[6]], S=W&&W.s[e[7]-1]; if(S&&S[0]) return fxpLab(e,S); } return fxpTxt(e,raw); }
+function fxpTxt(e,raw){ if(!e) return '—'; const [a,b,lab,k,p1,p2]=e, t=b>a?(raw-a)/(b-a):0, v=typeof p1==='number'?p1+(p2-p1)*t:null, n1=x=>Math.round(x*10)/10;
+  switch(k){ case 'P': case 'T': case 'Z': case 'GI': case 'PI': return n1(v)+'°'; case 'D': case 'F': case 'FR': case 'R': case 'G': case 'B': case 'W': case 'A': case 'UV': case 'L': case 'C': case 'M': case 'Y': return Math.round(v*100)+'%';
+    case 'I': return Math.round(v*100)+'% açık'; case 'ST': return n1(v)+' Hz'; case 'CT': return v>100?Math.round(v)+' K':Math.round(v*100)+'%';
+    case 'GR': case 'PRR': case 'WR': return v?(v>0?'↻ ':'↺ ')+n1(Math.abs(v)):'durgun'; default: return lab; } }
+function fxpCur(f,X){ const p=Object.assign(progDef(),PROG[f.id]||{}); if(LIVE.src==='net'&&hasPatch(f)){ const U=+f.uni||1, A=+f.addr; return X.ch.map(c=>c[0].reduce((v,o)=>v*256+getDMX(U,A+o-1),0)); } return fxpCompute(f,p,X); }
+function fxpChRow(f,X,i,cur){ const c=X.ch[i], T=X.P.t[c[4]]||[], raw=cur[i], F=fxpFns(X.P,X.ch,cur)[i], p=PROG[f.id]||{}, set=p.raw&&p.raw[c[1]]!=null, MX=fxpMX(c), seen=new Set();
+  const chips=T.map((e,ix)=>{ if(e[3]==='N'||!e[2]||e[2]==='—') return ''; if(e[8]){ const mm=e[8], j=X.ch.findIndex(x=>x[5]===mm[0]); if(j>=0){ let ok=false; for(let q=1;q<mm.length;q+=2) if(cur[j]>=mm[q]&&cur[j]<=mm[q+1]) ok=true; if(!ok) return ''; } }
+      const key=e[2]+'|'+(e[7]||0); if(seen.has(key)) return ''; seen.add(key); const W=e[6]>=0?X.P.w[e[6]]:null, S=W&&e[7]>0?W.s[e[7]-1]:null;
+      let pre=''; if(S&&W.k==='c') pre=`<i style="background:#${S[1]||'ffffff'}"></i>`; else if(S&&(W.k==='g'||W.k==='a')){ const im=fxpImg(S[2]); pre=`<img src="${im||goboIcon(e[7]>1?e[7]-1:0)}" alt="">`; } else if(e[3]==='CP'&&e[4]) pre=`<i style="background:#${e[4]}"></i>`;
+      const tx=fxpLab(e,S);
+      return `<button data-pcc="${i}|${ix}" class="${F===e?'on':''}" title="${esc(tx)}">${pre}<span>${esc(tx)}</span></button>`; }).join('');
+  return `<div class="pch"><div class="pchh"><b title="${esc(c[1])}">${esc(fxpAttrName(c[1]))}</b><span id="pcv_${i}">${esc(fxpTxtX(X,F,raw))}</span>${set?`<button class="rs" data-pcr="${i}" title="Varsayılana dön">↺</button>`:''}</div>
+    <input type="range" min="0" max="${MX}" step="1" value="${raw}" data-pcf="${i}" aria-label="${esc(fxpAttrName(c[1]))}">${chips?`<div class="pchips">${chips}</div>`:''}</div>`; }
+function fxpBody(f,X,pt){ const cur=fxpCur(f,X), T=c=>X.P.t[c[4]]||[], idx=[];
+  const isMix=c=>/^ColorAdd_|^ColorSub_/.test(c[1]);
+  X.ch.forEach((c,i)=>{ const g=c[2], A=c[1];
+    if(pt==='all') idx.push(i);
+    else if(pt==='int'&&g==='D'&&!T(c).every(e=>e[3]==='D')) idx.push(i);
+    else if(pt==='pos'&&g==='P'&&A!=='Pan'&&A!=='Tilt') idx.push(i);
+    else if(pt==='col'&&g==='C'&&!isMix(c)) idx.push(i);
+    else if(pt==='gobo'&&g==='G') idx.push(i);
+    else if(pt==='beam'&&(g==='B'||g==='F')) idx.push(i); });
+  const RK=[/^Dimmer$/,/^Shutter\d+$/,/^Pan$/,/^Tilt$/,/^Color\d+$/,/^ColorSub_/,/^ColorAdd_/,/^CT[OBC]$/,/^Gobo1$/,/^Gobo1/,/^Gobo2$/,/^Gobo2/,/^Gobo/,/^AnimationWheel\d+$/,/^Animation/,/^Zoom$/,/^Focus\d*$/,/^Iris$/,/^Frost/,/^Prism\d+$/,/^Prism/,/Macro|Effects\d*$/],
+    rk=A=>/MSpeed|Rate$|Speed$|Time$/.test(A)?90:/^Control|Reset|Lamp|Fan|Display/.test(A)?95:(RK.findIndex(r=>r.test(A))+1||60);
+  if(pt!=='all') idx.sort((a,b)=>rk(X.ch[a][1])-rk(X.ch[b][1])||a-b);
+  return idx.map(i=>fxpChRow(f,X,i,cur)).join(''); }
+function fxpApply(ci,fn){ const T0=progTargets(), X0=fxpOf(T0.find(f=>fxpOf(f))); if(!X0) return; const c0=X0.ch[ci]; LIVE.src='test';
+  for(const f of T0){ const X=fxpOf(f); if(!X) continue; const j=X.ch.findIndex(c=>c[1]===c0[1]); if(j<0) continue; const p=PROG[f.id]=Object.assign(progDef(),PROG[f.id]||{}); p.raw=Object.assign({},p.raw||{}); fn(p,X,X.ch[j],X0,c0); }
+  writeProg(); }
+function fxpCss(){ return `.pch{border-top:1px solid var(--line);padding:6px 0 4px}.pchh{display:flex;align-items:center;gap:8px;font-size:13px}.pchh b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pchh span{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12.5px;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pchh .rs{border:0;background:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0 2px}.pch input[type=range]{width:100%;margin:4px 0}
+.pchips{display:flex;flex-wrap:wrap;gap:5px;max-height:132px;overflow:auto}.pchips button{display:flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:7px;padding:3px 7px;cursor:pointer;font:600 11.5px/1.2 Barlow,sans-serif;max-width:190px}
+.pchips button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pchips button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}.pchips img{width:26px;height:26px;border-radius:50%;background:#000;flex:none}.pchips i{width:16px;height:16px;border-radius:50%;flex:none;border:1px solid rgba(128,128,128,.5)}
+.fxpinfo{font-size:12px;color:var(--muted);margin:2px 0 4px}@media (max-width:760px){.fxpinfo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pchips{max-height:96px}}`; }
+document.head.insertAdjacentHTML('beforeend','<style>'+fxpCss()+'</style>');
 // ---------- Canlı: DMX motoru ----------
 function getDMX(u,a){ const b=LIVE.U[u]; return b&&a>=1&&a<=512?b[a-1]:0; }
 function setDMX(u,a,v){ if(a<1||a>512) return; const b=LIVE.U[u]||(LIVE.U[u]=new Uint8Array(512)); b[a-1]=v; }
@@ -3769,6 +4101,11 @@ setInterval(()=>{ if(LIVE.on&&performance.now()-(LIVE.sAt||0)<400) liveSoon(); }
 function hasPatch(f){ return (f.ctl==='dmx'&&+f.addr>0&&!!modeInfo(f).tokens)||(f.ctl==='dim'&&+f.dim>0); }
 function fxLive(f){
   const c=LIVE.cache.get(f.id); if(c&&c.t===LIVE.tick) return c;
+  const FX=fxpOf(f);
+  if(FX&&(LIVE.src==='test'&&!hasPatch(f)||f.ctl==='dmx'&&+f.addr>0)){ const r={I:0,rgb:null,pan:null,tilt:null,zoom:null,t:LIVE.tick,gobo:0,grot:0,iris:0,focus:.5,frost:0,prism:false,strobe:0};
+    let raws; if(LIVE.src==='test'&&!hasPatch(f)){ const p=PROG[f.id]; if(!p){ LIVE.cache.set(f.id,r); return r; } raws=fxpCompute(f,Object.assign(progDef(),p),FX); }
+    else { const U=+f.uni||1, A=+f.addr; raws=FX.ch.map(c=>c[0].reduce((v,o)=>v*256+getDMX(U,A+o-1),0)); }
+    fxpLive(FX,raws,r); strobeGate(r); LIVE.cache.set(f.id,r); return r; }
   if(LIVE.src==='test'&&!hasPatch(f)){ const p=PROG[f.id], mv=['wash','spot','beam'].includes(f.type);
     const r={I:p?p.I:0,rgb:p&&p.col&&p.col.toLowerCase()!=='#ffffff'?hexRgb(p.col):null,pan:p&&mv?p.pan:null,tilt:p&&mv&&(p.pan||p.tilt)?p.tilt:null,zoom:p&&mv?p.zoom:null,t:LIVE.tick,
       gobo:p&&mv?p.gobo||0:0,grot:p&&mv?p.grot||0:0,iris:p?p.iris||0:0,focus:p&&p.focus!=null?p.focus:.5,frost:p?p.frost||0:0,prism:p&&mv?!!p.prism:false,strobe:p?p.strobe||0:0};
@@ -3804,6 +4141,7 @@ const progDef=()=>({I:0,col:'#ffffff',pan:0,tilt:0,zoom:.5,focus:.5,iris:0,frost
 function writeFx(f,p){
   if(f.ctl==='dim'&&+f.dim>0){ const a=+f.dim; setDMX(Math.floor((a-1)/512)+1,(a-1)%512+1,Math.round(p.I*255)); return; }
   if(f.ctl!=='dmx'||!(+f.addr>0)) return;
+  { const FX=fxpOf(f); if(FX){ const U=+f.uni||1, A=+f.addr, raws=fxpCompute(f,p,FX); FX.ch.forEach((c,i)=>{ let v=raws[i]; for(let j=c[0].length-1;j>=0;j--){ setDMX(U,A+c[0][j]-1,v&255); v=Math.floor(v/256); } }); return; } }
   const MI=modeInfo(f), PR=(MI.ent&&MI.ent.pr)||540, TR=(MI.ent&&MI.ent.tr)||270, U=+f.uni||1, A=+f.addr, T=MI.tokens||['D'], [r,g,b]=hexRgb(p.col), hasD=T.includes('D'), k=x=>Math.round(Math.max(0,Math.min(1,x))*255), s16=(x,fine)=>{ const n=Math.round(Math.max(0,Math.min(1,x))*65535); return fine?n&255:n>>8; }, m=hasD?1:p.I, wh=Math.min(r,g,b)>.97;
   T.forEach((t,i)=>{ let v=null;
     switch(t){ case 'D':v=s16(p.I,0);break; case 'D2':v=s16(p.I,1);break; case 'R':v=k((wh&&T.includes('W')?0:r)*m);break; case 'G':v=k((wh&&T.includes('W')?0:g)*m);break; case 'B':v=k((wh&&T.includes('W')?0:b)*m);break;
@@ -3832,12 +4170,15 @@ function goCue(i){
     for(const id in to){ const a=from[id], b=to[id], ca=hexRgb(a.col), cb=hexRgb(b.col);
       PROG[id]={I:lerp(a.I,b.I,t),pan:lerp(a.pan,b.pan,t),tilt:lerp(a.tilt,b.tilt,t),zoom:lerp(a.zoom,b.zoom,t),col:liveHex(ca.map((v,j)=>lerp(v,cb[j],t))),
         focus:lerp(a.focus??.5,b.focus??.5,t),iris:lerp(a.iris||0,b.iris||0,t),frost:lerp(a.frost||0,b.frost||0,t),grot:lerp(a.grot||0,b.grot||0,t),strobe:t<1?a.strobe||0:b.strobe||0,
-        gobo:t<.5?a.gobo||0:b.gobo||0,prism:t<.5?a.prism||0:b.prism||0,cws:t<.5?a.cws:b.cws}; }
+        gobo:t<.5?a.gobo||0:b.gobo||0,prism:t<.5?a.prism||0:b.prism||0,cws:t<.5?a.cws:b.cws};
+      if(a.raw||b.raw){ const R={}, ra=a.raw||{}, rb=b.raw||{}; for(const k of new Set([...Object.keys(ra),...Object.keys(rb)])){ const x=ra[k], y=rb[k]; const v=x!=null&&y!=null?Math.round(lerp(x,y,t)):(t<.5?x:y); if(v!=null) R[k]=v; } PROG[id].raw=R; } }
     writeProg(); if(t<1) cueAnim=requestAnimationFrame(step); else if(LIVE.tab==='prog') renderLive(); };
   step();
 }
 function setLive(on){ LIVE.on=!!on; LIVE.cache.clear(); LIVE.tick++; $('liveBadge').classList.toggle('on',LIVE.on); const c=$('liveOn'); if(c) c.checked=LIVE.on; if(LIVE.on&&LIVE.src==='test') writeProg(); renderAll(); }
-function toggleLive(open){ LIVE.panel=open==null?!LIVE.panel:open; $('liveP').classList.toggle('open',LIVE.panel); area.classList.toggle('lpo',LIVE.panel); requestAnimationFrame(()=>{ applyView(); paneSoon(); }); if(LIVE.panel){ if(!LIVE.on) setLive(true); renderLive(); } renderPalette(); }
+function toggleLive(open){ LIVE.panel=open==null?!LIVE.panel:open; $('liveP').classList.toggle('open',LIVE.panel); area.classList.toggle('lpo',LIVE.panel); document.body.classList.toggle('lpo',LIVE.panel);
+  if(LIVE.panel&&mq.matches){ closeSheet(); if(!st.view.palOff){ st.view.palOff=true; LIVE.palAuto=true; applyPanels(); } } else if(!LIVE.panel&&LIVE.palAuto){ LIVE.palAuto=false; }
+  if(!LIVE.panel){ LIVE.mini=false; area.classList.remove('lpmini'); } requestAnimationFrame(()=>{ if(mq.matches&&svg.style.display!=='none') fit(); else applyView(); paneSoon(); }); if(LIVE.panel){ if(!LIVE.on) setLive(true); renderLive(); } renderPalette(); }
 function renderLive(){
   if(!LIVE.panel) return;
   if(!window.isikNet){ const nb=document.querySelector('#lpTabs [data-lpt=net]'); if(nb) nb.remove(); if(LIVE.tab==='net') LIVE.tab='prog'; } const B=$('lpBody'); document.querySelectorAll('#lpTabs [data-lpt]').forEach(b=>b.classList.toggle('on',b.dataset.lpt===LIVE.tab)); $('liveOn').checked=LIVE.on;
@@ -3847,8 +4188,16 @@ function renderLive(){
     const has=tok=>T.some(f=>!hasPatch(f)?(['wash','spot','beam'].includes(f.type)||['I','focus','frost','strobe'].includes(tok)):(modeInfo(f).tokens||[]).some(x=>x.replace(/\d$/,'')===tok));
     const R=(k,l,min,max,stp,v,fmtv,tok)=>{ const ok=!tok||has(tok); return `<div class="lrow"${ok?'':' style="opacity:.4"'}><b>${l}</b><input type="range" data-pg="${k}" min="${min}" max="${max}" step="${stp}" value="${v}"${dis}${ok?'':' disabled'}><span id="pgv_${k}">${fmtv}</span></div>`; };
     const f0=T.find(f=>hasPatch(f)&&(modeInfo(f).ex||{}).cw), cwt=f0?(modeInfo(f0).ex.cw):null, g0=T.find(f=>hasPatch(f)&&(modeInfo(f).ex||{}).gb), gbt=g0?[...new Set(modeInfo(g0).ex.gb.map(q=>q[2]))]:[0,1,2,3,4,5,6,7,8];
-    const tabs=[['int','Yoğunluk'],['pos','Konum'],['col','Renk'],['gobo','Gobo'],['beam','Işın']];
+    const PFf=T.find(f=>fxpOf(f)), PX=PFf?fxpOf(PFf):null;
+    const tabs=[['int','Yoğunluk'],['pos','Konum'],['col','Renk'],['gobo','Gobo'],['beam','Işın']].concat(PX?[['all','Kanallar']]:[]);
     let body='';
+    if(PX){ const ph=PX.P.ph||{}, mixK=PX.ch.some(c=>/^ColorAdd_|^ColorSub_/.test(c[1])), fb=k=>fxpBody(PFf,PX,k)||'<p class="muted">Bu cihazda bu bölümde kanal yok.</p>';
+      const info=`<div class="fxpinfo">Orijinal özellikler: <b>${esc(fullName(PX.e))}</b> · ${esc(PFf.mode||'')}${ph.z?` · zoom ${ph.z[0]}–${ph.z[1]}°`:ph.ba?` · ${ph.ba}°`:''}${ph.lm?` · ${ph.lm} lm`:''}${ph.k?` · ${ph.k} K`:''}${T.length>1?' · aynı nitelikli cihazlara da uygulanır':''}</div>`;
+      if(pt==='int') body=info+`<div class="cols"><div>${R('I','Dimmer',0,100,1,Math.round(p.I*100),Math.round(p.I*100)+'%')}</div></div><div class="acts"><button class="btn sm" data-pga="full"${dis}>Tam</button><button class="btn sm" data-pga="off"${dis}>Kapat</button></div>`+fb('int');
+      else if(pt==='pos') body=info+`<div class="cols"><div>${R('pan','Pan',-270,270,1,Math.round(p.pan),Math.round(p.pan)+'°','P')}</div><div>${R('tilt','Tilt',-135,135,1,Math.round(p.tilt),Math.round(p.tilt)+'°','T')}</div></div><div class="acts"><button class="btn sm" data-pga="home"${dis}>Yönü sıfırla</button></div>`+fxpBody(PFf,PX,'pos');
+      else if(pt==='col') body=info+(mixK?`<div class="field"><label>Renk karışımı</label><div class="swrow">${['#ffffff','#ffd8a0','#ff2a2a','#ff8a00','#ffe600','#2ad94a','#00e5ff','#1f4fff','#ff2bd6','#7a2bff'].map(c=>`<button class="swb${p.col===c?' on':''}" data-pgc="${c}" style="background:${c}"${dis} aria-label="${c}"></button>`).join('')}<input type="color" data-pg="col" value="${p.col}"${dis}></div></div>`:'')+fxpBody(PFf,PX,'col');
+      else body=info+fb(pt==='gobo'?'gobo':pt==='all'?'all':'beam'); }
+    else
     if(pt==='int') body=`<div class="cols"><div>${R('I','Dimmer',0,100,1,Math.round(p.I*100),Math.round(p.I*100)+'%')}</div><div>${R('strobe','Strobe',0,100,1,Math.round((p.strobe||0)*100),p.strobe?Math.round(p.strobe*100)+'%':'kapalı','S')}</div></div><div class="acts"><button class="btn sm" data-pga="full"${dis}>Tam</button><button class="btn sm" data-pga="off"${dis}>Kapat</button><button class="btn sm" data-pga="nostrobe"${dis}>Strobe kapalı</button></div>`;
     else if(pt==='pos') body=`<div class="cols"><div>${R('pan','Pan',-270,270,1,Math.round(p.pan),Math.round(p.pan)+'°','P')}</div><div>${R('tilt','Tilt',-135,135,1,Math.round(p.tilt),Math.round(p.tilt)+'°','T')}</div></div><div class="acts"><button class="btn sm" data-pga="home"${dis}>Yönü sıfırla</button></div>`;
     else if(pt==='col') body=(cwt?`<div class="field"><label>Renk tekeri (${esc(label(f0))})</label><div class="swrow">${cwt.map((q,ix)=>`<button class="swb${p.cws===ix?' on':''}" data-pgw="${ix}" style="background:#${q[2]}"${dis} title="${ix===0?'Açık':'Dilim '+ix}"></button>`).join('')}</div></div>`:'')
@@ -3914,13 +4263,17 @@ function renderLive(){
 }
 $('liveBadge').addEventListener('click',()=>toggleLive(true));
 $('lpClose').addEventListener('click',()=>toggleLive(false));
+$('lpMin').addEventListener('click',()=>{ LIVE.mini=!LIVE.mini; area.classList.toggle('lpmini',LIVE.mini); $('lpMin').textContent=LIVE.mini?'▴':'▾'; requestAnimationFrame(()=>{ applyView(); paneSoon(); }); });
 $('liveOn').addEventListener('change',e=>setLive(e.target.checked));
 $('lpTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-lpt]'); if(!b) return; LIVE.tab=b.dataset.lpt; renderLive(); });
-$('lpBody').addEventListener('input',e=>{ const k=e.target.dataset.pg; if(!k) return; const T=progTargets(); if(!T.length) return; LIVE.src='test';
+$('lpBody').addEventListener('input',e=>{ if(e.target.dataset.pcf!=null){ const ci=+e.target.dataset.pcf, fr=+e.target.value/Math.max(1,+e.target.max);
+    fxpApply(ci,(p,X,c)=>{ p.raw[c[1]]=Math.round(fr*fxpMX(c)); if(!(p.I>0)&&!/^(Pan|Tilt|Control|Position)/.test(c[1])) p.I=1; });
+    const f0=progTargets().find(f=>fxpOf(f)), X=f0&&fxpOf(f0); if(X){ const cur=fxpCur(f0,X), o=$('pcv_'+ci); if(o) o.textContent=fxpTxtX(X,fxpFns(X.P,X.ch,cur)[ci],cur[ci]); } return; }
+  const k=e.target.dataset.pg; if(!k) return; const T=progTargets(); if(!T.length) return; LIVE.src='test';
   const v=k==='col'?e.target.value:['I','zoom','focus','iris','frost','grot','strobe'].includes(k)?+e.target.value/100:+e.target.value;
   T.forEach(f=>{ PROG[f.id]=Object.assign(progDef(),PROG[f.id]||{},{[k]:v}); if(k!=='I'&&k!=='col'&&!(PROG[f.id].I>0)) PROG[f.id].I=PROG[f.id].I; });
   const o=$('pgv_'+k); if(o) o.textContent=k==='col'?'':(k==='strobe'&&!v)?'kapalı':(k==='grot'&&!v)?'durgun':['I','zoom','focus','iris','frost','grot','strobe'].includes(k)?Math.round(v*100)+'%':Math.round(v)+'°'; writeProg(); });
-$('lpBody').addEventListener('change',e=>{ const t=e.target;
+$('lpBody').addEventListener('change',e=>{ const t=e.target; if(t.dataset.pcf!=null){ renderLive(); return; }
   if(t.dataset.cname!=null){ st.cues[+t.dataset.cname].name=t.value; save(); return; }
   if(t.dataset.cfade!=null){ st.cues[+t.dataset.cfade].fade=Math.max(0,+t.value||0); save(); return; }
   if(['nArt','nSacn','nAuto'].includes(t.id)){ st.view[t.id]=t.checked; save(); }
@@ -3929,6 +4282,12 @@ $('lpBody').addEventListener('change',e=>{ const t=e.target;
   if(t.id==='nCon'){ st.view.nCon=t.value; save(); renderLive(); } });
 $('lpBody').addEventListener('click',e=>{ let b;
   if((b=e.target.closest('[data-ptab2]'))){ LIVE.ptab=b.dataset.ptab2; renderLive(); return; }
+  if((b=e.target.closest('[data-pcc]'))){ const [ci,ix]=b.dataset.pcc.split('|').map(Number);
+    fxpApply(ci,(p,X,c,X0,c0)=>{ const e0=(X0.P.t[c0[4]]||[])[ix]; if(!e0) return; const T=X.P.t[c[4]]||[], e1=X===X0?e0:(T.find(e=>e[2]===e0[2])||T.find(e=>e[3]===e0[3]&&e[7]===e0[7])); if(!e1) return;
+      let v=Math.round((e1[0]+e1[1])/2); if(e1[8]){ const mm=e1[8], j=X.ch.findIndex(x=>x[5]===mm[0]); if(j>=0){ const cur=fxpCompute(null,p,X); let ok=false; for(let q=1;q<mm.length;q+=2) if(cur[j]>=mm[q]&&cur[j]<=mm[q+1]) ok=true; if(!ok) p.raw[X.ch[j][1]]=Math.round((mm[1]+mm[2])/2); } }
+      p.raw[c[1]]=v; if(!(p.I>0)&&!/^(Pan|Tilt|Control|Position)/.test(c[1])) p.I=1; });
+    renderLive(); return; }
+  if((b=e.target.closest('[data-pcr]'))){ const ci=+b.dataset.pcr; fxpApply(ci,(p,X,c)=>{ delete p.raw[c[1]]; }); renderLive(); return; }
   if((b=e.target.closest('[data-pgw]'))){ LIVE.src='test'; const ix=+b.dataset.pgw; progTargets().forEach(f=>{ const p=PROG[f.id]=Object.assign(progDef(),PROG[f.id]||{}); p.cws=ix; const cw=(modeInfo(f).ex||{}).cw; if(!hasPatch(f)&&cw&&cw[ix]) p.col='#'+cw[ix][2]; if(!(p.I>0)) p.I=1; }); writeProg(); renderLive(); return; }
   if((b=e.target.closest('[data-pgg]'))){ LIVE.src='test'; const k=+b.dataset.pgg; progTargets().forEach(f=>{ const p=PROG[f.id]=Object.assign(progDef(),PROG[f.id]||{}); p.gobo=k; if(!(p.I>0)) p.I=1; }); writeProg(); renderLive(); return; }
   if((b=e.target.closest('[data-pga]'))){ const a=b.dataset.pga; LIVE.src=LIVE.net?LIVE.src:'test';
@@ -3941,7 +4300,7 @@ $('lpBody').addEventListener('click',e=>{ let b;
     if(a==='go'){ if(LIVE.cue+1<Q.length) goCue(LIVE.cue+1); else toast('Son cue'); return; }
     if(a==='back'){ if(LIVE.cue>0) goCue(LIVE.cue-1); return; }
     if(a==='black'){ cancelAnimationFrame(cueAnim); for(const k in PROG) PROG[k].I=0; LIVE.cue=-1; writeProg(); renderLive(); return; }
-    const snap=()=>{ const d={}; for(const f of st.fixtures){ const p=PROG[f.id]; if(p) d[f.id]=Object.assign({},p); } return d; };
+    const snap=()=>{ const d={}; for(const f of st.fixtures){ const p=PROG[f.id]; if(p){ d[f.id]=Object.assign({},p); if(p.raw) d[f.id].raw=Object.assign({},p.raw); else delete d[f.id].raw; } } return d; };
     if(a==='rec'){ snapshot(); const n=Q.length?String((parseFloat(Q[Q.length-1].n)||Q.length)+1):'1'; Q.push({n,name:'',fade:3,data:snap()}); LIVE.cue=Q.length-1; save(); renderLive(); toast(`Cue ${n} kaydedildi`); return; }
     if(a==='upd'&&Q[LIVE.cue]){ snapshot(); Q[LIVE.cue].data=snap(); save(); toast(`Cue ${Q[LIVE.cue].n} güncellendi`); return; } return; }
   if((b=e.target.closest('[data-cgo]'))){ goCue(+b.dataset.cgo); return; }
@@ -3966,6 +4325,7 @@ async function netStop(){ try{ await window.isikNet.stop(); }catch(_){} LIVE.net
 const BI=window.BUILD_INFO||null;
 async function apkCheck(manual){
   if(!BI||BI.platform!=='android'||!BI.repo) return;
+  if(BI.store==='play'){ if(manual) toast(`Güncellemeler Google Play'den otomatik gelir (${BI.v})`); return; }
   try{ const r=await fetch(`https://api.github.com/repos/${BI.repo}/releases/latest`,{headers:{Accept:'application/vnd.github+json'}}); if(!r.ok) throw new Error('HTTP '+r.status);
     const j=await r.json(), v=String(j.tag_name||'').replace(/^v/,''), apk=(j.assets||[]).find(a=>/\.apk$/i.test(a.name)), nw=(a,b)=>{ const p=x=>String(x).split('.').map(n=>parseInt(n,10)||0), A=p(a), B=p(b); for(let i=0;i<3;i++){ if((A[i]||0)!==(B[i]||0)) return (A[i]||0)>(B[i]||0); } return false; };
     if(v&&nw(v,BI.v)){ const B2=$('updBar'); B2.innerHTML=`<span>Yeni sürüm var: Işık Planı ${esc(v)}</span><button class="go" data-upd="apk" data-url="${esc(apk?apk.browser_download_url:j.html_url)}">İndir</button><button data-upd="later">Sonra</button>`; B2.hidden=false; }

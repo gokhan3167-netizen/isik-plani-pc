@@ -264,7 +264,7 @@ async function thumbImg(buf,svg){ if(SHARP===undefined) await goboImg(Buffer.all
   try{ const out=await SHARP(buf,{density:svg?96:72}).resize(48,48,{fit:'contain',background:{r:0,g:0,b:0,alpha:0}}).png({palette:true,colours:48,compressionLevel:9}).toBuffer(); return 'data:image/png;base64,'+out.toString('base64'); }catch(_){ return null; } }
 // ---- GDTF Share API (çerezli oturum) ----
 let cookie='';
-async function api(path,opt={}){ const h=Object.assign({},opt.headers||{}); if(cookie) h.Cookie=cookie; const r=await fetch(API+path,Object.assign({},opt,{headers:h}));
+async function api(path,opt={}){ const h=Object.assign({},opt.headers||{}); if(cookie) h.Cookie=cookie; const r=await fetch(API+path,Object.assign({signal:AbortSignal.timeout((+process.env.GDTF_TIMEOUT_S||60)*1000)},opt,{headers:h}));
   const sc=typeof r.headers.getSetCookie==='function'?r.headers.getSetCookie():(r.headers.get('set-cookie')?[r.headers.get('set-cookie')]:[]); if(sc.length) cookie=sc.map(c=>c.split(';')[0]).join('; '); return r; }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 try{
@@ -287,8 +287,12 @@ try{
     if(FX_DETAIL&&d.th){ const h=createHash('sha1').update(d.th).digest('hex').slice(0,14), iid='i'+(parseInt(h.slice(0,4),16)%64); (IMGS[iid]=IMGS[iid]||{})[h]=d.th; e.th='h:'+h; }
     if(FX_DETAIL&&d.p){ e.fp='g:'+it.rid; const sid='g'+(fxpHash(it.rid)%64); (PROF[sid]=PROF[sid]||{})[it.rid]=d.p; for(const [h,im] of Object.entries(d.imgs||{})){ const iid='i'+(parseInt(h.slice(0,4),16)%64); (IMGS[iid]=IMGS[iid]||{})[h]=im; } }
     out.push(e); };
+  // Süre sınırı: önbellekte olmayanları en fazla GDTF_BUDGET_MIN dakika indir; kalanlar sonraki derlemede tamamlanır
+  const T0=Date.now(), BUDGET=(+process.env.GDTF_BUDGET_MIN||15)*60000; let skipped=0, lastLog=0;
   async function worker(){ while(i<items.length){ const it=items[i++], fp=`${C2}/${it.rid}.json`;
       if(existsSync(fp)){ try{ keep(it,JSON.parse(readFileSync(fp,'utf8'))); continue; }catch(_){ } }
+      if(Date.now()-T0>BUDGET){ skipped++; continue; }
+      if(Date.now()-lastLog>60000){ lastLog=Date.now(); console.log(`… ${i}/${items.length} işlendi, ${dl} yeni indirme (${Math.round((Date.now()-T0)/60000)} dk)`); }
       let buf=null; for(let t=0;t<3&&!buf;t++){ try{ const r=await api('downloadFile.php?rid='+it.rid); const b=Buffer.from(await r.arrayBuffer()); if(r.ok&&b[0]===0x50&&b[1]===0x4B) buf=b; else await sleep(800); }catch(_){ await sleep(1500); } }
       await sleep(150); if(!buf){ bad++; continue; } dl++;
       let d={e:null}; try{ d.e=parseGDTF(buf); }catch(_){ }
@@ -301,5 +305,6 @@ try{
   if(FX_DETAIL){ const a=fxpWriteShards(outDir+'/fx',PROF), b=fxpWriteShards(outDir+'/fx',IMGS); console.log(`Orijinal özellikler: ${Object.values(PROF).reduce((n,o)=>n+Object.keys(o).length,0)} cihaz, ${Object.values(IMGS).reduce((n,o)=>n+Object.keys(o).length,0)} gobo resmi (${Math.round((a.bytes+b.bytes)/1048576)} MB)`); }
   writeFileSync(outDir+'/gdtf-library.js','/* Kaynak: GDTF Share (gdtf-share.com) — izinle — '+date+' */\nwindow.GDTF_LIB='+JSON.stringify({v:1,date,lib:out})+';\n');
   writeFileSync('gdtf-kutuphane.json',JSON.stringify({kind:'isik-plani-kutuphane',source:'GDTF Share (gdtf-share.com)',date,count:out.length,lib:out.map(e=>{ const r=Object.assign({},e); delete r.fp; delete r.th; return r; })}));
+  if(skipped) console.log(`Süre sınırı: ${skipped} cihaz bu derlemede atlandı, sonraki derlemelerde eklenecek.`);
   console.log(`${out.length} cihaz kaydedildi (${dl} yeni indirme, ${bad} okunamadı): ${outDir}/gdtf-library.js ve gdtf-kutuphane.json`);
 }catch(e){ console.warn('GDTF kütüphanesi oluşturulamadı ('+e.message+'). Program diğer kütüphanelerle çalışmaya devam eder.'); process.exit(0); }

@@ -26,10 +26,25 @@ jobs:
           key: gdtf-v2-${{ github.run_id }}
           restore-keys: gdtf-v2-
           enableCrossOsArchive: true
-      - run: node scripts/gdtf.mjs
+      - name: GDTF kutuphanesi (en fazla 20 dk; bitmeyenler sonraki derlemede)
+        run: node scripts/gdtf.mjs
+        timeout-minutes: 30
+        continue-on-error: true
         env:
           GDTF_USER: ${{ secrets.GDTF_USER }}
           GDTF_PASS: ${{ secrets.GDTF_PASS }}
+          GDTF_BUDGET_MIN: '20'
+          NODE_OPTIONS: --max-old-space-size=8192
+      - name: GDTF ciktisini Mac ile paylas
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdtf-out
+          path: |
+            www/vendor/gdtf-library.js
+            www/vendor/fx/
+            gdtf-kutuphane.json
+          if-no-files-found: ignore
+          retention-days: 1
       - uses: actions/cache/save@v4
         if: always()
         with:
@@ -69,16 +84,13 @@ jobs:
       - run: npm install
       - run: npm run vendor
       - run: node scripts/fixtures.mjs
-      - uses: actions/cache/restore@v4
+      # GDTF Mac'te yeniden indirilmez: Windows'un hazirladigi kutuphane kullanilir
+      - name: GDTF ciktisini Windows'tan al
+        uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          path: gdtf-cache
-          key: gdtf-v2-${{ github.run_id }}
-          restore-keys: gdtf-v2-
-          enableCrossOsArchive: true
-      - run: node scripts/gdtf.mjs
-        env:
-          GDTF_USER: ${{ secrets.GDTF_USER }}
-          GDTF_PASS: ${{ secrets.GDTF_PASS }}
+          name: gdtf-out
+          path: .
       - run: npx electron-builder --mac --universal --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false

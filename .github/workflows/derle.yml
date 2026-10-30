@@ -1,21 +1,18 @@
 name: Masaustu surumunu derle
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
-  derle:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            hedef: --win --x64
-          - os: macos-latest
-            hedef: --mac --universal
-    runs-on: ${{ matrix.os }}
+  windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - name: Surum numarasi (her derlemede artar)
+        shell: bash
+        run: node -e "const f='package.json',p=require('./'+f),[a,b]=p.version.split('.');p.version=a+'.'+b+'.'+process.env.GITHUB_RUN_NUMBER;require('fs').writeFileSync(f,JSON.stringify(p,null,2));console.log('Surum',p.version)"
       - run: npm install
       - run: npm run vendor
       - run: node scripts/fixtures.mjs
@@ -28,14 +25,44 @@ jobs:
         env:
           GDTF_USER: ${{ secrets.GDTF_USER }}
           GDTF_PASS: ${{ secrets.GDTF_PASS }}
-      - run: npx electron-builder ${{ matrix.hedef }} --publish never
+      - run: npx electron-builder --win --x64 --publish always
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
       - uses: actions/upload-artifact@v4
         with:
-          name: isik-plani-${{ matrix.os }}
+          name: isik-plani-windows
           path: |
             dist/*.exe
-            dist/*.dmg
             ofl-kutuphane.json
             gdtf-kutuphane.json
+  mac:
+    needs: windows
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Surum numarasi (Windows ile ayni)
+        run: node -e "const f='package.json',p=require('./'+f),[a,b]=p.version.split('.');p.version=a+'.'+b+'.'+process.env.GITHUB_RUN_NUMBER;require('fs').writeFileSync(f,JSON.stringify(p,null,2));console.log('Surum',p.version)"
+      - run: npm install
+      - run: npm run vendor
+      - run: node scripts/fixtures.mjs
+      - uses: actions/cache@v4
+        with:
+          path: gdtf-cache
+          key: gdtf-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: gdtf-${{ runner.os }}-
+      - run: node scripts/gdtf.mjs
+        env:
+          GDTF_USER: ${{ secrets.GDTF_USER }}
+          GDTF_PASS: ${{ secrets.GDTF_PASS }}
+      - run: npx electron-builder --mac --universal --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: isik-plani-mac
+          path: dist/*.dmg

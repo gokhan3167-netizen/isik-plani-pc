@@ -5,30 +5,50 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    outputs:
+      v: ${{ steps.v.outputs.v }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Surum numarasi (her derlemede artar)
+        id: v
         shell: bash
-        run: node -e "const f='package.json',p=require('./'+f),[a,b]=p.version.split('.');p.version=a+'.'+b+'.'+process.env.GITHUB_RUN_NUMBER;require('fs').writeFileSync(f,JSON.stringify(p,null,2));console.log('Surum',p.version)"
+        run: node -e "const f='package.json',p=require('./'+f),[a,b]=p.version.split('.');p.version=a+'.'+b+'.'+process.env.GITHUB_RUN_NUMBER;require('fs').writeFileSync(f,JSON.stringify(p,null,2));require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'v='+p.version+'\n');console.log('Surum',p.version)"
       - run: npm install
       - run: npm run vendor
       - run: node scripts/fixtures.mjs
-      - uses: actions/cache@v4
+      # GDTF onbellegi: indirilenler derleme basarisiz olsa bile saklanir, Mac ile ortak kullanilir
+      - uses: actions/cache/restore@v4
         with:
           path: gdtf-cache
-          key: gdtf-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: gdtf-${{ runner.os }}-
+          key: gdtf-v2-${{ github.run_id }}
+          restore-keys: gdtf-v2-
+          enableCrossOsArchive: true
       - run: node scripts/gdtf.mjs
         env:
           GDTF_USER: ${{ secrets.GDTF_USER }}
           GDTF_PASS: ${{ secrets.GDTF_PASS }}
-      - run: npx electron-builder --win --x64 --publish always
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: gdtf-cache
+          key: gdtf-v2-${{ github.run_id }}
+          enableCrossOsArchive: true
+      - run: npx electron-builder --win --x64 --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: GitHub surumune yukle (otomatik guncelleme dosyalari dahil)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.v.outputs.v }}
+          name: Işık Planı ${{ steps.v.outputs.v }}
+          make_latest: true
+          files: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
       - uses: actions/upload-artifact@v4
         with:
           name: isik-plani-windows
@@ -45,23 +65,28 @@ jobs:
         with:
           node-version: 22
       - name: Surum numarasi (Windows ile ayni)
-        run: node -e "const f='package.json',p=require('./'+f),[a,b]=p.version.split('.');p.version=a+'.'+b+'.'+process.env.GITHUB_RUN_NUMBER;require('fs').writeFileSync(f,JSON.stringify(p,null,2));console.log('Surum',p.version)"
+        run: node -e "const f='package.json',p=require('./'+f);p.version='${{ needs.windows.outputs.v }}';require('fs').writeFileSync(f,JSON.stringify(p,null,2));console.log('Surum',p.version)"
       - run: npm install
       - run: npm run vendor
       - run: node scripts/fixtures.mjs
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
           path: gdtf-cache
-          key: gdtf-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: gdtf-${{ runner.os }}-
+          key: gdtf-v2-${{ github.run_id }}
+          restore-keys: gdtf-v2-
+          enableCrossOsArchive: true
       - run: node scripts/gdtf.mjs
         env:
           GDTF_USER: ${{ secrets.GDTF_USER }}
           GDTF_PASS: ${{ secrets.GDTF_PASS }}
-      - run: npx electron-builder --mac --universal --publish always
+      - run: npx electron-builder --mac --universal --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Ayni surume Mac dosyasini ekle
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.windows.outputs.v }}
+          files: dist/*.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: isik-plani-mac

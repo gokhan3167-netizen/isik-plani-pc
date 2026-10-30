@@ -22,23 +22,29 @@ function createWindow() {
 // Türkçe menü. Geri al ve Tümünü seç bilerek menüde yok: Ctrl/Cmd+Z ve Ctrl/Cmd+A
 // doğrudan plana gider (planın kendi geri alma ve seçme komutları).
 const isMac = process.platform === 'darwin';
-const template = [
+// Menü dili programın diliyle aynı olur (renderer 'set-lang' ile bildirir; ilk açılışta sistem dili)
+const MT = {
+  tr: { about:'Işık Planı hakkında', hide:'Gizle', others:'Diğerlerini gizle', quit:'Çık', file:'Dosya', close:'Pencereyi kapat', edit:'Düzen', cut:'Kes', copy:'Kopyala', paste:'Yapıştır', view:'Görünüm', full:'Tam ekran', rz:'Yazı boyutunu sıfırla', zi:'Yazıları büyüt', zo:'Yazıları küçült', reload:'Yeniden yükle', win:'Pencere', min:'Küçült', front:'Öne getir' },
+  en: { about:'About Işık Planı', hide:'Hide', others:'Hide Others', quit:'Quit', file:'File', close:'Close Window', edit:'Edit', cut:'Cut', copy:'Copy', paste:'Paste', view:'View', full:'Toggle Full Screen', rz:'Actual Size', zi:'Zoom In', zo:'Zoom Out', reload:'Reload', win:'Window', min:'Minimize', front:'Bring All to Front' }
+};
+function buildMenu(lang) { const t = MT[lang] || MT.tr; return Menu.buildFromTemplate([
   ...(isMac ? [{ label: 'Işık Planı', submenu: [
-    { role: 'about', label: 'Işık Planı hakkında' }, { type: 'separator' },
-    { role: 'hide', label: 'Gizle' }, { role: 'hideOthers', label: 'Diğerlerini gizle' }, { type: 'separator' },
-    { role: 'quit', label: 'Çık' } ] }] : []),
-  { label: 'Dosya', submenu: [ isMac ? { role: 'close', label: 'Pencereyi kapat' } : { role: 'quit', label: 'Çık' } ] },
-  { label: 'Düzen', submenu: [
-    { role: 'cut', label: 'Kes' }, { role: 'copy', label: 'Kopyala' }, { role: 'paste', label: 'Yapıştır' } ] },
-  { label: 'Görünüm', submenu: [
-    { role: 'togglefullscreen', label: 'Tam ekran' }, { type: 'separator' },
-    { role: 'resetZoom', label: 'Yazı boyutunu sıfırla' }, { role: 'zoomIn', label: 'Yazıları büyüt' }, { role: 'zoomOut', label: 'Yazıları küçült' },
-    { type: 'separator' }, { role: 'reload', label: 'Yeniden yükle' } ] },
-  { label: 'Pencere', submenu: [ { role: 'minimize', label: 'Küçült' }, ...(isMac ? [{ role: 'front', label: 'Öne getir' }] : []) ] }
-];
+    { role: 'about', label: t.about }, { type: 'separator' },
+    { role: 'hide', label: t.hide }, { role: 'hideOthers', label: t.others }, { type: 'separator' },
+    { role: 'quit', label: t.quit } ] }] : []),
+  { label: t.file, submenu: [ isMac ? { role: 'close', label: t.close } : { role: 'quit', label: t.quit } ] },
+  { label: t.edit, submenu: [
+    { role: 'cut', label: t.cut }, { role: 'copy', label: t.copy }, { role: 'paste', label: t.paste } ] },
+  { label: t.view, submenu: [
+    { role: 'togglefullscreen', label: t.full }, { type: 'separator' },
+    { role: 'resetZoom', label: t.rz }, { role: 'zoomIn', label: t.zi }, { role: 'zoomOut', label: t.zo },
+    { type: 'separator' }, { role: 'reload', label: t.reload } ] },
+  { label: t.win, submenu: [ { role: 'minimize', label: t.min }, ...(isMac ? [{ role: 'front', label: t.front }] : []) ] }
+]); }
+ipcMain.on('set-lang', (e, l) => { if (l === 'tr' || l === 'en') Menu.setApplicationMenu(buildMenu(l)); });
 
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  Menu.setApplicationMenu(buildMenu(/^tr/i.test(app.getLocale()) ? 'tr' : 'en'));
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
   setTimeout(checkUpdates, 6000);              // açılıştan biraz sonra güncelleme kontrolü

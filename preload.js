@@ -1,6 +1,7 @@
 // Pencereye yalnızca gereken köprüyü açar (güvenli: Node erişimi yok)
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('isikNet', {
+  setLang: l => ipcRenderer.send('set-lang', l),
   start: o => ipcRenderer.invoke('net-start', o),
   stop: () => ipcRenderer.invoke('net-stop'),
   onDMX: cb => { ipcRenderer.removeAllListeners('dmx'); ipcRenderer.on('dmx', (e, d) => cb(d)); },
